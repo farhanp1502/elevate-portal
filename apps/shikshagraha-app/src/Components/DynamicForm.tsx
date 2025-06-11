@@ -1322,9 +1322,17 @@ const DynamicForm = ({
       // setAlertSeverity('success');
       setIsOpenOTP(true);
     } else {
-      setShowError(true);
-      setAlertSeverity('error');
-      setErrorMessage(registrationResponse.message);
+      if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
+        setShowError(true);
+        setAlertSeverity('error');
+        setErrorMessage('Invalid Organisation');
+      } else {
+        setShowError(true);
+        setAlertSeverity('error');
+        setErrorMessage(registrationResponse.message);
+      }
+     
+      
     }
   };
   const handleRegister = async (otp) => {

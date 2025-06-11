@@ -251,7 +251,7 @@ export const registerUserService = async (requestData: any) => {
       return error.response;
     } else {
       console.error('Unexpected error:', error);
-      throw error;
+      return error;
     }
   }
 };
