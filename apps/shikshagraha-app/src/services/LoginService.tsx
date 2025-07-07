@@ -80,7 +80,7 @@ export const readHomeListForm = async (token: string) => {
     if (err.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
     if (axios.isAxiosError(err)) {
       console.error(
@@ -110,7 +110,7 @@ export const authenticateUser = async ({
     if (response.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
 
     return response?.data;
@@ -118,7 +118,7 @@ export const authenticateUser = async ({
     if (error.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
     console.error('error in login', error);
     // throw error;
@@ -143,7 +143,7 @@ export const fetchTenantData = async ({
     if (response.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
 
     return response?.data;
@@ -151,7 +151,7 @@ export const fetchTenantData = async ({
     if (error.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
     console.error('Error fetching tenant data:', error);
     return error;
@@ -160,7 +160,7 @@ export const fetchTenantData = async ({
 
 export const fetchRoleData = async (): Promise<any> => {
   const apiUrl = `${API_ENDPOINTS.roleRead}`;
-  const tenantId = localStorage.getItem('origin');
+  const tenantId = localStorage.getItem('tenantCode');
 
   try {
     const response = await axios.get(apiUrl, {
@@ -227,7 +227,7 @@ export const schemaRead = async (): Promise<any> => {
     if (response.status === 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
 
     return response?.data;
@@ -235,7 +235,7 @@ export const schemaRead = async (): Promise<any> => {
     if (error?.response?.status === 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href = window.location.origin + "?unAuth=true";
+      window.location.href = window.location.origin + '?unAuth=true';
     }
     console.error('error in schemaRead', error);
     return error;
@@ -388,5 +388,22 @@ export const resetPassword = async (payload: {
   } catch (error) {
     console.error('Error during resetPassword API call:', error);
     throw error;
+  }
+};
+
+// services/loginService.ts
+export const fetchBranding = async (origin: string) => {
+  const apiUrl = `${API_ENDPOINTS.tenantRead}`;
+  try {
+    const response = await axios.get(apiUrl, {
+      headers: {
+        origin: localStorage.getItem('origin'),
+      },
+    });
+
+    return response?.data;
+  } catch (error: any) {
+    console.error('Error fetching tenant data:', error);
+    return error;
   }
 };
