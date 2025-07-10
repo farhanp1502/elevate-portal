@@ -91,10 +91,11 @@ export default function Home() {
   };
 
   const buildProgramUrl = (path: string, sameOrigin: boolean): string => {
+    debugger;
     if (sameOrigin) {
       router.push(`${path}`);
     } else {
-      return path + localStorage.getItem('accToken');
+      window.location.href = path + localStorage.getItem('accToken');
     }
   };
 
