@@ -91,7 +91,6 @@ export default function Home() {
   };
 
   const buildProgramUrl = (path: string, sameOrigin: boolean): string => {
-    debugger;
     if (sameOrigin) {
       router.push(`${path}`);
     } else {
