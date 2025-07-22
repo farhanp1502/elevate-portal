@@ -264,14 +264,19 @@ export default function Login() {
           style={{ width: '100%' }}
           onSubmit={(e) => {
             e.preventDefault();
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-              if (!loginClickedRef.current) return;
-              // // Only submit if the submit button was clearly clicked
-              // const isActualSubmit =
-              //   e.nativeEvent.submitter?.className?.includes('MuiButton-root');
-              // if (!isActualSubmit) return;
+
+            const isStandalone = window.matchMedia(
+              '(display-mode: standalone)'
+            ).matches;
+
+            // Allow submit only if user clicked login explicitly
+            if (isStandalone && !loginClickedRef.current) {
+              return;
             }
+
+            // Reset click flag after submission
             loginClickedRef.current = false;
+
             handleButtonClick();
           }}
           onInput={(e) => {
@@ -360,9 +365,9 @@ export default function Login() {
                 ? 'Password must be at least 8 characters long, include numerals, uppercase, lowercase, and special characters.'
                 : ''
             }
-            autoComplete="off"
+            autoComplete="new-password"
             inputProps={{
-              autoComplete: 'off',
+              autoComplete: 'new-password',
               name: 'login-password',
               readOnly: readOnly,
               onFocus: () => setReadOnly(false),
@@ -427,7 +432,10 @@ export default function Login() {
                 },
                 width: { xs: '50%', sm: '50%' },
               }}
-              onClick={() => (loginClickedRef.current = true)}
+              onClick={() => {
+                loginClickedRef.current = true;
+                // Allow submit to proceed
+              }}
             >
               Login
             </Button>
