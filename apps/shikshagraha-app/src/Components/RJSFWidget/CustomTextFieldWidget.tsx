@@ -40,7 +40,8 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const contactRegex = /^[6-9]\d{9}$/;
   const udiseRegex = /^\d{11}$/;
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const usernameRegex = /^[a-zA-Z0-9@._-]{3,30}$/; //add
+  const usernameRegex =
+    /^(?:[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})$/;
   const registrationCodeRegex = /^[a-zA-Z0-9_]+$/;
   const lowerLabel = label?.toLowerCase();
   const isOptional = () => {
@@ -68,7 +69,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         break;
       case 'username':
         if (!usernameRegex.test(val))
-          return 'Username can contain letters, numbers, hyphens, underscores, dots, and @ symbols. Must be 3 to 30 characters long.';
+          return 'Username must start and end with alphanumeric characters. Can contain letters, numbers, hyphens, and underscores. Special characters cannot be consecutive.';
         break;
       case 'contact number':
         if (val && !contactRegex.test(val)) {
