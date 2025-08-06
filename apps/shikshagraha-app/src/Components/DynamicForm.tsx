@@ -222,9 +222,25 @@ const DynamicForm = ({
     let timer: NodeJS.Timeout;
 
     if (isRateLimited && rateLimitExpiry) {
+      // Initial update
+      setCurrentTime(Date.now());
+
       timer = setInterval(() => {
-        setCountdownUpdate((prev) => prev + 1);
-        setCurrentTime(Date.now());
+        const now = Date.now();
+        if (now >= rateLimitExpiry) {
+          clearInterval(timer);
+          setIsRateLimited(false);
+          setRateLimitExpiry(null);
+          setTooManyRequests(false);
+          setOtpDisabled(false);
+          setOtpDisabledMessage('');
+          if (isErrorButtonFromRateLimit) {
+            setErrorButton(false);
+            setIsErrorButtonFromRateLimit(false);
+          }
+        } else {
+          setCurrentTime(now);
+        }
       }, 1000);
     }
 
@@ -233,7 +249,7 @@ const DynamicForm = ({
         clearInterval(timer);
       }
     };
-  }, [isRateLimited, rateLimitExpiry]);
+  }, [isRateLimited, rateLimitExpiry, isErrorButtonFromRateLimit]);
   //custom validation on formData for learner fields hide on dob
   useEffect(() => {
     // Remove this line that was clearing error state on every formData change
@@ -428,7 +444,9 @@ const DynamicForm = ({
             ? {
                 tenantId:
                   api.header.tenantId === '**'
-                    ? localStorage.getItem('tenantId') || ''
+                    ? localStorage.getItem('tenantId') ||
+                      localStorage.getItem('tenantCode') ||
+                      ''
                     : api.header.tenantId,
                 Authorization:
                   api.header.Authorization === '**'
@@ -647,7 +665,9 @@ const DynamicForm = ({
               ? {
                   tenantId:
                     api.header.tenantId === '**'
-                      ? localStorage.getItem('tenantId') || ''
+                      ? localStorage.getItem('tenantId') ||
+                        localStorage.getItem('tenantCode') ||
+                        ''
                       : api.header.tenantId,
                   Authorization:
                     api.header.Authorization === '**'
@@ -703,7 +723,9 @@ const DynamicForm = ({
                         ? {
                             tenantId:
                               api.header.tenantId === '**'
-                                ? localStorage.getItem('tenantId') || ''
+                                ? localStorage.getItem('tenantId') ||
+                                  localStorage.getItem('tenantCode') ||
+                                  ''
                                 : api.header.tenantId,
                             Authorization:
                               api.header.Authorization === '**'
@@ -1535,9 +1557,11 @@ const DynamicForm = ({
           registrationResponse?.message ===
           'Too many requests. Please try again later.'
         ) {
+          const now = Date.now();
           setTooManyRequests(true);
           setIsRateLimited(true);
-          setRateLimitExpiry(Date.now() + 2 * 60 * 1000); // 2 minutes from now
+          setRateLimitExpiry(now + 2 * 60 * 1000); // 2 minutes from now
+          setCurrentTime(now); // Set initial current time
           setShowError(true);
           setErrorButton(true);
           setIsErrorButtonFromRateLimit(true);
@@ -1790,36 +1814,32 @@ const DynamicForm = ({
         </Box>
       )}
       {!isCallSubmitInHandle ? (
-        <Form
-          ref={formRef}
-          schema={formSchema}
-          uiSchema={formUiSchema}
-          formData={formData}
-          formContext={{ formData }}
-          onChange={handleChange}
-          // onChange={(data) => setFormData(data)}
-          // onSubmit={handleSubmit}
-
-          onSubmit={({ formData }) => {
-            handleSubmit({ formData });
-          }}
-          validator={validator}
-          //noHtml5Validate //disable auto error pop up to field location
-          showErrorList={false} // Hides the error list card at the top
-          liveValidate //all validate live
-          // liveValidate={submitted} // Only validate on submit or typing
-          // onChange={() => setSubmitted(true)} // Show validation when user starts typing
-          // customValidate={customValidate} // Dynamic Validation
-          transformErrors={transformErrors} // ✅ Suppress default pattern errors
-          widgets={widgets}
-          id="dynamic-form-id"
-        >
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Form
+            ref={formRef}
+            schema={formSchema}
+            uiSchema={formUiSchema}
+            formData={formData}
+            formContext={{ formData }}
+            onChange={handleChange}
+            onSubmit={({ formData }) => {
+              handleSubmit({ formData });
+            }}
+            validator={validator}
+            showErrorList={false}
+            liveValidate
+            transformErrors={transformErrors}
+            widgets={widgets}
+            id="dynamic-form-id"
+          />
           <Box
             sx={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               width: '100%',
+              marginTop: '5px !important',
+              mt: 2,
             }}
           >
             <Button
@@ -1852,25 +1872,21 @@ const DynamicForm = ({
                 color: '#FFFFFF',
                 borderRadius: '30px',
                 textTransform: 'none',
+                // marginTop: '5px',
                 fontWeight: 'bold',
                 fontSize: '14px',
-                padding: '8px 16px',
+                // padding: '8px 5px',
                 '&:hover': {
                   bgcolor: '#543E98',
                 },
                 '&.Mui-disabled': {
-                  bgcolor: '#BDBDBD', // light grey when disabled
+                  bgcolor: '#BDBDBD',
                   color: '#FFFFFF',
                 },
                 width: '50%',
               }}
             >
               Send OTP
-              {/* {isRateLimited && rateLimitExpiry
-                ? `Try Again in ${Math.ceil(
-                    (rateLimitExpiry - Date.now()) / 1000
-                  )}s`
-                : 'Send OTP'} */}
             </Button>
             {isRateLimited && rateLimitExpiry && (
               <Typography
@@ -1879,15 +1895,17 @@ const DynamicForm = ({
                 sx={{ mt: 1, textAlign: 'center' }}
               >
                 Too many requests. Please wait{' '}
-                {Math.floor((rateLimitExpiry - currentTime) / 60000)}:
-                {Math.floor(((rateLimitExpiry - currentTime) % 60000) / 1000)
-                  .toString()
-                  .padStart(2, '0')}{' '}
+                {(() => {
+                  const timeLeft = Math.max(0, rateLimitExpiry - currentTime);
+                  const minutes = Math.floor(timeLeft / 60000);
+                  const seconds = Math.floor((timeLeft % 60000) / 1000);
+                  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                })()}{' '}
                 before trying again.
               </Typography>
             )}
           </Box>
-        </Form>
+        </Box>
       ) : (
         <Grid container spacing={2}>
           {Object.keys(formSchema.properties).map((key) => (
@@ -1901,14 +1919,11 @@ const DynamicForm = ({
                 uiSchema={{ [key]: formUiSchema[key] }}
                 formData={formData}
                 fields={fields}
-                // onChange={handleChange}
                 onChange={(data) => setFormData(data)}
                 onSubmit={handleSubmit}
                 validator={validator}
-                // showErrorList={false} // Hides the error list card at the top
                 liveValidate //all validate live
                 customValidate={customValidate} // Dynamic Validation
-                // transformErrors={transformErrors} // ✅ Suppress default pattern errors
                 widgets={widgets}
               >
                 {!isCallSubmitInHandle ? null : (
