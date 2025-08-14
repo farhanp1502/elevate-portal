@@ -62,7 +62,7 @@ const Scanner = () => {
   const handleScanResult = async (result: Result) => {
     const path: any = result.getText();
     await stopScan();
-    if(path.include('verifyCertificate')){
+    if(path.includes('verifyCertificate')){
       let userId=path.split('/').pop();
       console.log("id",userId)
       let baseUrl=localStorage.getItem('origin')
