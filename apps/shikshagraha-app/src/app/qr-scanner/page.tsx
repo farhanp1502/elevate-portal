@@ -69,6 +69,7 @@ const Scanner = () => {
       window.location.href = `${baseUrl}/certificate-verify/${userId}`
       return;
     }
+    console.log("path",path)
     window.location.href=path
     return;
   };
