@@ -27,7 +27,7 @@ export const Footer: React.FC = () => {
   const pathToValueMap = {
     '/home': 0,
     '/content': 1,
-    '/ml/project-downloads': 3,
+    '/observations/downloads': 3,
     '/profile': 4,
   };
   const updateTabValue = (currentPath: string) => {
@@ -43,7 +43,7 @@ export const Footer: React.FC = () => {
         currentPath?.startsWith('/player')
       ) {
         setValue(1);
-      } else if (currentPath.startsWith('/ml/project-downloads')) {
+      } else if (currentPath.startsWith('/observations/downloads')) {
         setValue(2);
       } else if (currentPath.startsWith('/profile')) {
         setValue(3);
@@ -108,7 +108,7 @@ export const Footer: React.FC = () => {
           handleNavigation('/content/content');
           break;
         case 3:
-          handleNavigation('/ml/project-downloads');
+          handleNavigation('/observations/downloads');
           break;
         case 4:
           handleNavigation('/profile');
