@@ -68,9 +68,11 @@ export default function Home() {
           setError((err as Error).message);
         }
       }
-      let home = JSON.parse(localStorage.getItem('HomeData'))
+      let rawHome = localStorage.getItem('HomeData')
+      let home = rawHome ? JSON.parse(rawHome) : []
       if(home){
         setCardData(home)
+        setLoading(false)
       }else{
         fetchConfig();
       }
