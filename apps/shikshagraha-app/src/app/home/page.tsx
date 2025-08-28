@@ -58,6 +58,7 @@ export default function Home() {
         if (!header['org-id']) return;
         try {
           const data = await readHomeListForm(token);
+          localStorage.setItem('HomeData',JSON.stringify(data.result))
           setCardData(data.result);
           localStorage.setItem(
             'theme',
@@ -67,7 +68,12 @@ export default function Home() {
           setError((err as Error).message);
         }
       }
-      fetchConfig();
+      let home = JSON.parse(localStorage.getItem('HomeData'))
+      if(home){
+        setCardData(home)
+      }else{
+        fetchConfig();
+      }
     }
   }, [router]);
 
