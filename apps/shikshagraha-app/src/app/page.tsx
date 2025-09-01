@@ -42,6 +42,9 @@ export default function Login() {
   const [displayName, setDisplayName] = useState('');
   const [formSubmitted, setFormSubmitted] = useState(false);
   const loginClickedRef = useRef(false);
+  const [logoSrc, setLogoSrc] = useState<string>('');
+  const TRANSPARENT_PX =
+    'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
   const passwordRegex =
     /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+\-={}:";'<>?,./\\]).{8,}$/;
   useEffect(() => {
@@ -85,14 +88,40 @@ export default function Login() {
         if (brandingData) {
           console.log('Branding:', brandingData?.result);
           const tenantCode = brandingData?.result?.code;
+
+          const apiLogo =
+            brandingData?.result?.logo ||
+            brandingData?.result?.logoUrl ||
+            brandingData?.result?.branding?.logo;
           // const tenantCode = 'shikshalokam';
           localStorage.setItem('tenantCode', tenantCode);
           setDisplayName(tenantCode);
+          // Determine logo dynamically; persist for next load
+          const normalized = (tenantCode || '').toLowerCase();
+          const TENANT_LOGOS: Record<string, string> = {
+            shikshalokam: '/assets/images/SG_Logo.png',
+            shikshagraha: '/assets/images/SG_Logo.jpg',
+          };
+          if (apiLogo && typeof apiLogo === 'string') {
+            setLogoSrc(apiLogo);
+            localStorage.setItem('brandingLogoUrl', apiLogo);
+          } else if (TENANT_LOGOS[normalized]) {
+            setLogoSrc(TENANT_LOGOS[normalized]);
+            localStorage.setItem('brandingLogoUrl', TENANT_LOGOS[normalized]);
+          }
         }
       });
       const displayName = localStorage.getItem('tenantCode');
       if (displayName) {
         setDisplayName(displayName);
+        const normalized = (displayName || '').toLowerCase();
+        const TENANT_LOGOS: Record<string, string> = {
+          shikshalokam: '/assets/images/SG_Logo.png',
+          shikshagraha: '/assets/images/SG_Logo.jpg',
+        };
+        if (TENANT_LOGOS[normalized]) {
+          setLogoSrc((prev) => prev || TENANT_LOGOS[normalized]);
+        }
       }
       if (coreDomain === 'shikshagrah') {
         coreDomain = 'shikshagraha';
