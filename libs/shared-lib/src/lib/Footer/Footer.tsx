@@ -24,41 +24,28 @@ export const Footer: React.FC = () => {
   }, []);
   const downloadsUrl =
     process.env.NEXT_PUBLIC_DOWNLOADS_URL || '/observations/downloads';
-    console.log("downloadsURl",downloadsUrl)
   // Map paths to their corresponding tab values
   const prevPathRef = useRef<string>('');
   const pathToValueMap = {
     '/home': 0,
-    '/content': 1,
-    '/observations/downloads': 3,
-    '/profile': 4,
+    '/observations/downloads': 2,
+    '/profile': 3,
   };
   const updateTabValue = (currentPath: string) => {
-    console.log("currentPath",currentPath)
     // Find the current value based on exact path matches first
     const currentValue =
       pathToValueMap[currentPath as keyof typeof pathToValueMap];
-    console.log("path log",currentValue)
     if (currentValue !== undefined) {
-      console.log("if block")
       setValue(currentValue);
     } else {
-      console.log("else block 46")
       // Fallback to startsWith check for nested routes
-      if (
-        currentPath.startsWith('/content') ||
-        currentPath?.startsWith('/player')
-      ) {
-        console.log("52 line")
+      if (currentPath?.startsWith('/player')) {
         setValue(1);
       } else if (currentPath.startsWith('/observations/downloads')) {
-        console.log("55 line")
         setValue(2);
       } else if (currentPath.startsWith('/profile')) {
-        console.log("58 line")
         setValue(3);
       } else if (currentPath === '/' || currentPath === '') {
-        console.log("61 line")
         // Default to home for root path
         setValue(0);
       }
@@ -118,18 +105,14 @@ export const Footer: React.FC = () => {
   };
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
-    console.log("path",newValue)
     switch (newValue) {
       case 0:
         handleNavigation('/home');
         break;
-      case 1:
-        handleNavigation('/content/content');
-        break;
-      case 3:
+      case 2:
         handleNavigation(downloadsUrl);
         break;
-      case 4:
+      case 3:
         handleNavigation('/profile');
         break;
       default:
@@ -203,19 +186,6 @@ export const Footer: React.FC = () => {
                 transition: 'transform 0.3s ease, color 0.3s ease',
                 transform: value === 0 ? 'scale(1.2)' : 'scale(1)',
                 color: value === 0 ? '#582E92' : 'inherit',
-              }}
-            />
-          }
-        />
-        <BottomNavigationAction
-          label="Content"
-          icon={
-            <DescriptionIcon
-              sx={{
-                fontSize: value === 1 ? '2rem' : '1.5rem',
-                transition: 'transform 0.3s ease, color 0.3s ease',
-                transform: value === 1 ? 'scale(1.2)' : 'scale(1)',
-                color: value === 1 ? '#582E92' : 'inherit',
               }}
             />
           }
