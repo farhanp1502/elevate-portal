@@ -229,6 +229,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     setIsFocused(true);
     onFocus(id, event.target.value);
   };
+  const displayErrors = rawErrors.filter(
+    (error) => !error.toLowerCase().includes('required')
+  );
 
   const toggleShowPassword = () => {
     setShowPassword((prev) => !prev);
