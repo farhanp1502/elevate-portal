@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { WidgetProps } from '@rjsf/utils';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+
 const CustomTextFieldWidget = (props: WidgetProps) => {
   const {
     id,
@@ -35,8 +36,20 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const isMobileField =
     label?.toLowerCase() === 'mobile' ||
     label?.toLowerCase() === 'contact number';
-  const passwordRegex =
-    /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\-={}:":;'<>?,./\\])(?!.*\s).{8,}$/;
+  // Password policy: prefer env-provided regex/message; fallback to strict defaults
+  const defaultPasswordPolicyRegex =
+    '^(?=(?:.*[A-Z]){2})(?=(?:.*[0-9]){2})(?=(?:.*[!@#%$&()\\-`.+,]){3}).{11,}$';
+  const envPasswordRegexString =
+    process.env.NEXT_PUBLIC_PASSWORD_POLICY_REGEX || defaultPasswordPolicyRegex;
+  let passwordRegex: RegExp;
+  try {
+    passwordRegex = new RegExp(envPasswordRegexString);
+  } catch {
+    passwordRegex = new RegExp(defaultPasswordPolicyRegex);
+  }
+  const passwordPolicyMessage =
+    process.env.NEXT_PUBLIC_PASSWORD_POLICY_MESSAGE ||
+    'Password must have at least two uppercase letters, two numbers, three special characters, and be at least 11 characters long.';
   const nameRegex = /^[a-zA-Z]+$/;
   const contactRegex = /^[6-9]\d{9}$/;
   const udiseRegex = /^\d{11}$/;
@@ -46,16 +59,19 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const registrationCodeRegex = /^[a-zA-Z0-9_]+$/;
   const lowerLabel = label?.toLowerCase();
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   const isOptional = () => {
     if (isEmailField && formData.mobile) return true;
     if (isMobileField && formData.email) return true;
     return false;
   };
+
   const isActuallyRequired = () => {
     if (isEmailField) return !formData.mobile && required;
     if (isMobileField) return !formData.email && required;
     return required;
   };
+
   const validateField = (field: string, val: string): string | null => {
     if (isOptional() && !val) return null;
     console.log('field', field);
@@ -83,7 +99,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         }
         return null;
         break;
-        break;
       case 'email':
         if (val && !emailRegex.test(val)) {
           return 'Enter a valid email address';
@@ -103,8 +118,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         if (val.includes(' ')) {
           return 'Password cannot contain spaces.';
         }
-        if (!passwordRegex.test(val))
-          return 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.';
+        if (!passwordRegex.test(val)) return passwordPolicyMessage;
         break;
       case 'confirm password':
         // Check for any whitespace
@@ -145,6 +159,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       setLocalError(error);
     }
   }, [formData.password]);
+
   const shouldShowHelperText = () => {
     // Always show if there are validation errors
     if (displayErrors.length > 0 || localError) {
@@ -162,6 +177,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
 
     return true;
   };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const val = event.target.value;
     if (isMobileField) {
@@ -220,6 +236,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       props.onErrorChange(!!error);
     }
   };
+
   const handleBlur = () => {
     setIsFocused(false);
     if (onBlur) onBlur(id, value);
@@ -229,6 +246,8 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     setIsFocused(true);
     onFocus(id, event.target.value);
   };
+
+  // Filter out 'is a required property' messages
   const displayErrors = rawErrors.filter(
     (error) => !error.toLowerCase().includes('required')
   );
@@ -236,6 +255,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const toggleShowPassword = () => {
     setShowPassword((prev) => !prev);
   };
+
   const renderLabel = () => {
     if (
       [
@@ -277,7 +297,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     return label;
   };
 
+  // Determine if the label should be shrunk (for proper positioning)
   const shouldShrinkLabel = isFocused || Boolean(value);
+
   return (
     <>
       {/* Hidden fields to prevent autofill */}
@@ -344,16 +366,14 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           sx: {
             '& .MuiInputBase-input': {
               padding: '10px 12px',
-              fontSize: isIOS ? '16px !important' : '12px !important', // Ensure 16px font size to prevent iOS zoom
+              fontSize: isIOS ? '16px !important' : '12px !important',
               color: readonly ? '#000000' : undefined,
               backgroundColor: readonly ? '#f5f5f5' : undefined,
               WebkitTextFillColor: readonly ? '#000000' : undefined,
-              // iOS Safari zoom prevention
               transform: 'translateZ(0)',
               WebkitTransform: 'translateZ(0)',
               WebkitAppearance: 'none',
               borderRadius: '0',
-              // Prevent zoom on focus
               '@media screen and (-webkit-min-device-pixel-ratio: 0)': {
                 fontSize: isIOS ? '16px !important' : '12px !important',
               },
@@ -361,7 +381,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: readonly ? 'rgba(0, 0, 0, 0.23)' : undefined,
             },
-            // Additional iOS fixes
             '& .MuiInputBase-root': {
               WebkitTapHighlightColor: 'transparent',
               WebkitTouchCallout: 'none',
@@ -376,7 +395,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           ),
         }}
         InputLabelProps={{
-          shrink: shouldShrinkLabel,
+          shrink: shouldShrinkLabel, // This is the key fix
           sx: {
             fontSize: isIOS ? '16px' : '12px',
             backgroundColor: shouldShrinkLabel ? '#fefefe' : 'transparent',
@@ -427,4 +446,5 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     </>
   );
 };
+
 export default CustomTextFieldWidget;
