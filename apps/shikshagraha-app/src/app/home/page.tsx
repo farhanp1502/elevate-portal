@@ -38,6 +38,9 @@ export default function Home() {
     } else {
       console.log("This code is running on the server-side.");
     }
+
+    if(typeof window !== 'undefined'){
+
     const accToken = localStorage.getItem('accToken');
     console.log("block before",accToken)
     if (!accToken) {
@@ -46,6 +49,16 @@ export default function Home() {
       router.push(`${window.location.origin}?unAuth=true`);
       return;
     } else {
+      let rawHome = localStorage.getItem('HomeData')
+      let home = rawHome ? JSON.parse(rawHome) : []
+      if(home.length>0){
+        console.log("if block",home)
+        setCardData(home)
+        // setLoading(false)
+      }else{
+        console.log("else block")
+        fetchConfig();
+      }
       const getProfileData = async () => {
         console.log("getProflie function call")
         try {
@@ -80,17 +93,8 @@ export default function Home() {
           setError((err as Error).message);
         }
       }
-      let rawHome = localStorage.getItem('HomeData')
-      let home = rawHome ? JSON.parse(rawHome) : []
-      if(home.length>0){
-        console.log("if block",home)
-        setCardData(home)
-        setLoading(false)
-      }else{
-        console.log("else block")
-        fetchConfig();
-      }
     }
+  }
   }, [router]);
 
   const handleAccountClick = () => {
