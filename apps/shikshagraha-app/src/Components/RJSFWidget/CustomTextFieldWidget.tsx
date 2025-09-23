@@ -39,8 +39,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   // Password policy: prefer env-provided regex/message; fallback to strict defaults
   const defaultPasswordPolicyRegex =
     '^(?=(?:.*[A-Z]){2})(?=(?:.*[0-9]){2})(?=(?:.*[!@#%$&()\\-`.+,]){3}).{11,}$';
-  const envPasswordRegexString =
-    process.env.NEXT_PUBLIC_PASSWORD_POLICY_REGEX || defaultPasswordPolicyRegex;
+  const envPasswordRegexString =defaultPasswordPolicyRegex;
   let passwordRegex: RegExp;
   try {
     passwordRegex = new RegExp(envPasswordRegexString);
