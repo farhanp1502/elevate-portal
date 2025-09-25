@@ -31,7 +31,44 @@ const withPWA = withPWAInit({
     // audio: ...,
     // video: ...,
   },
-
+  dir: './src',
+  pwa: {
+    dest: 'public',
+    cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        urlPattern: '/',
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'start-url'
+        }
+      },
+      {
+        urlPattern: /\/assets\/.*/i,
+        handler: 'CacheFirst'
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts'
+        }
+      },
+      {
+        urlPattern: /\/api\/.*$/i,
+        handler: 'NetworkOnly'
+      }
+    ]
+  },
+  async redirects () {
+    return [
+      {
+        source: '/support',
+        destination: '--url--',
+        permanent: true
+      }
+    ];
+  },
   workboxOptions: {
     disableDevLogs: false,
 
