@@ -54,7 +54,9 @@ export default function Login() {
     const status = localStorage.getItem('userStatus');
     console.log("status",status)
     if (token && status !== 'archived') {
-      router.push('/home');
+      console.log("replace url true")
+      router.replace('/home')
+      // router.push('/home');
     }
     // Remove readonly after a short delay to prevent autofill
     const timer = setTimeout(() => {
@@ -201,7 +203,9 @@ export default function Login() {
         localStorage.setItem('name', response?.result?.user?.username);
         document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Strict`;
         document.cookie = `userId=${userId}; path=/; secure; SameSite=Strict`;
-        router.push('/home');
+        router.replace('/home')
+        console.log("replace url true")
+        // router.push('/home');
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
         if (orgId) {

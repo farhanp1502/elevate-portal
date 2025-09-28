@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { composePlugins, withNx } = require('@nx/next');
-const pwa = require("@ducanh2912/next-pwa");
+const withPWAInit = require("@ducanh2912/next-pwa").default;
 // @ts-ignore
 const PORTAL_BASE_URL = 'https://sunbird-editor.tekdinext.com';
 
@@ -18,7 +18,7 @@ const routes = {
 const BASE_PATH = process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '';
 
 const isDev = process.env.NODE_ENV === 'development';
-const withPWA = pwa.default({
+const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
@@ -31,58 +31,49 @@ const withPWA = pwa.default({
     // audio: ...,
     // video: ...,
   },
-  workboxOptions: {
-    disableDevLogs: true, // keep logs for now
+  dir: './src',
+  pwa: {
+    dest: 'public',
+    cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        // Pages & HTML requests
-        urlPattern: /^https?.*\//,
+        // Cache HTML pages (like /home)
+        urlPattern: ({ request }) => request.destination === "document",
         handler: "NetworkFirst",
         options: {
-          cacheName: "html-pages",
-          networkTimeoutSeconds: 5,
+          cacheName: "pages-cache",
           expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 7 * 24 * 60 * 60, // 1 week
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
+            maxEntries: 20,
+            maxAgeSeconds: 24 * 60 * 60,
           },
         },
       },
       {
-        // API calls
-        urlPattern: /^https?.*\/api\/.*$/,
-        handler: "NetworkFirst",
+        // Cache CSS/JS
+        urlPattern: ({ request }) =>
+          ["style", "script", "worker"].includes(request.destination),
+        handler: "StaleWhileRevalidate",
         options: {
-          cacheName: "api-cache",
-          networkTimeoutSeconds: 5,
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 24 * 60 * 60, // 1 day
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
+          cacheName: "static-resources",
         },
       },
       {
-        // Static assets (images, css, js, fonts, etc.)
-        urlPattern: /^https?.*\.(?:js|css|woff2?|png|jpg|jpeg|svg|gif|ico)$/,
+        // Cache images
+        urlPattern: ({ request }) => request.destination === "image",
         handler: "CacheFirst",
         options: {
-          cacheName: "static-assets",
+          cacheName: "images-cache",
           expiration: {
-            maxEntries: 100,
-            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
+            maxEntries: 50,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
           },
         },
       },
-    ],
-  }
+    ]
+  },
+  workboxOptions: {
+    disableDevLogs: true,
+  },
 });
 
 
