@@ -195,8 +195,8 @@ export default function Login() {
         localStorage.setItem('firstname', response?.result?.user?.name);
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
-        document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Strict`;
-        document.cookie = `userId=${userId}; path=/; secure; SameSite=Strict`;
+        document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Lax`;
+        document.cookie = `userId=${userId}; path=/; secure; SameSite=Lax`;
         router.push('/home');
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
