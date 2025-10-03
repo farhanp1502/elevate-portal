@@ -48,10 +48,15 @@ export default function Login() {
   const passwordRegex =
     /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+\-={}:";'<>?,./\\]).{8,}$/;
   useEffect(() => {
+    console.log("page.tsx")
     const token = localStorage.getItem('accToken');
+    console.log("token",token)
     const status = localStorage.getItem('userStatus');
+    console.log("status",status)
     if (token && status !== 'archived') {
-      router.push('/home');
+      console.log("replace url true")
+      router.replace('/home')
+      // router.push('/home');
     }
     // Remove readonly after a short delay to prevent autofill
     const timer = setTimeout(() => {
@@ -61,6 +66,7 @@ export default function Login() {
   }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      console.log("if block client side rendering")
       const hostname = window.location.hostname;
       const origin = window.location.origin;
       const parts = hostname.split('.');

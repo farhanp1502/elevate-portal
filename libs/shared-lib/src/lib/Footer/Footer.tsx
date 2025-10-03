@@ -139,7 +139,7 @@ export const Footer: React.FC = () => {
           onClick={() => handleNavigation('/qr-scanner')}
           sx={{
             position: 'fixed',
-            bottom: 35,
+            bottom: 25,
             left: '50%',
             transform: 'translateX(-50%)',
             backgroundColor: '#582E92',
@@ -200,19 +200,6 @@ export const Footer: React.FC = () => {
                 transition: 'transform 0.3s ease, color 0.3s ease',
                 transform: value === 2 ? 'scale(1.2)' : 'scale(1)',
                 color: value === 2 ? '#582E92' : 'inherit',
-              }}
-            />
-          }
-        />
-        <BottomNavigationAction
-          label="Profile"
-          icon={
-            <AccountCircleIcon
-              sx={{
-                fontSize: value === 3 ? '2rem' : '1.5rem',
-                transition: 'transform 0.3s ease, color 0.3s ease',
-                transform: value === 3 ? 'scale(1.2)' : 'scale(1)',
-                color: value === 3 ? '#582E92' : 'inherit',
               }}
             />
           }

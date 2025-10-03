@@ -968,6 +968,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                 sx={{
                   bgcolor: '#582E92',
                   color: 'white',
+                  marginBottom: 3,
                   ':hover': { bgcolor: '#461B73' },
                 }}
               >
