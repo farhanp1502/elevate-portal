@@ -36,7 +36,7 @@ if (core === 'shikshagrah') core = 'shikshagraha';
         const code = data?.result?.code || core;
         const logo =
           data?.result?.logoUrl ||
-          data?.result?.logoUrl ||
+          data?.result?.logo ||
           `/icons/icon-192x192.png`;
         return {
           title: `Welcome to ${code}`,
