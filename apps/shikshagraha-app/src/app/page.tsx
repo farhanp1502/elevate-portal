@@ -92,14 +92,11 @@ export default function Login() {
       }, domainPart);
       fetchBranding(coreDomain).then((brandingData) => {
         if (brandingData) {
-          console.log('Branding:', brandingData?.result);
           const tenantCode = brandingData?.result?.code;
-
           const apiLogo =
             brandingData?.result?.logo ||
             brandingData?.result?.logoUrl ||
             brandingData?.result?.branding?.logo;
-          // const tenantCode = 'shikshalokam';
           localStorage.setItem('tenantCode', tenantCode);
           setDisplayName(tenantCode);
           // Determine logo dynamically; persist for next load
@@ -129,11 +126,6 @@ export default function Login() {
           setLogoSrc((prev) => prev || TENANT_LOGOS[normalized]);
         }
       }
-      if (coreDomain === 'shikshagrah') {
-        coreDomain = 'shikshagraha';
-      }
-      console.log('tenantCode', displayName);
-      // localStorage.setItem('origin', coreDomain);
     }
   }, []);
   const handleChange =
@@ -183,7 +175,6 @@ export default function Login() {
         password,
         ...(isMobile ? { phone_code: '+91' } : {}),
       };
-      console.log('Signin payload:', payload);
       const response = await signin(payload);
       const accessToken = response?.result?.access_token;
       const refreshToken = response?.result?.refresh_token;
@@ -201,11 +192,9 @@ export default function Login() {
         localStorage.setItem('firstname', response?.result?.user?.name);
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
-        document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Strict`;
-        document.cookie = `userId=${userId}; path=/; secure; SameSite=Strict`;
-        router.replace('/home')
-        console.log("replace url true")
-        // router.push('/home');
+        document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Lax`;
+        document.cookie = `userId=${userId}; path=/; secure; SameSite=Lax`;
+        router.replace('/home');
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
         if (orgId) {
@@ -342,15 +331,12 @@ export default function Login() {
           >
             <Box
               component="img"
-              src={
-                displayName == 'shikshalokam'
-                  ? '/assets/images/SG_Logo.png'
-                  : '/assets/images/SG_Logo.jpg'
-              }
+              src={logoSrc || TRANSPARENT_PX}
               alt="logo"
               sx={{
-                width: '50%',
-                height: '50%',
+                width: '30%',
+                height: '30%',
+                borderRadius: '50%',
                 objectFit: 'cover',
               }}
             />
