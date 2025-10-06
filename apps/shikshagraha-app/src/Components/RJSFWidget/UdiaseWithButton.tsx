@@ -101,30 +101,18 @@ const extractLocationData = (
     externalId: entities?.[0]?.externalId || '',
   });
 
-  // Extract school data from the main locationInfo object
-  const schoolData: LocationEntity = {
-    _id: locationInfo?._id || '',
-    name: locationInfo?.metaInformation?.name || '',
-    externalId:
-      locationInfo?.metaInformation?.externalId ||
-      locationInfo?.registryDetails?.code ||
-      locationInfo?.registryDetails?.locationId ||
-      udiseCode,
-  };
-
-  console.log('🏫 Extracted school data:', schoolData);
-
-  const result = {
+  return {
     udise: udiseCode,
-    school: schoolData,
+    school: {
+      _id: locationInfo?._id || '',
+      name: locationInfo?.metaInformation?.name || '',
+      externalId: udiseCode,
+    },
     state: getFirstEntity(locationInfo?.parentInformation?.state),
     district: getFirstEntity(locationInfo?.parentInformation?.district),
     block: getFirstEntity(locationInfo?.parentInformation?.block),
     cluster: getFirstEntity(locationInfo?.parentInformation?.cluster),
   };
-
-  console.log('📦 Final extracted data:', result);
-  return result;
 };
 
 const UdiaseWithButton: React.FC<UdiaseWithButtonProps> = ({
@@ -208,7 +196,6 @@ const UdiaseWithButton: React.FC<UdiaseWithButtonProps> = ({
 
       // Success case - extract and send location data
       const locationData = extractLocationData(locationInfo, localValue);
-      console.log('🎯 Sending location data to parent:', locationData);
       onFetchData(locationData);
       setErrorMessage('');
     } catch (error: any) {
@@ -326,3 +313,4 @@ const UdiaseWithButton: React.FC<UdiaseWithButtonProps> = ({
 };
 
 export default UdiaseWithButton;
+
