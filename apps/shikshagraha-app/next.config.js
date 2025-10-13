@@ -17,15 +17,12 @@ const routes = {
 const BASE_PATH = process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '';
 
 const isDev = process.env.NODE_ENV === 'development';
-const withPWA = require("@ducanh2912/next-pwa").default({
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  swcMinify: true,
-  dest: "public",
-  workboxOptions: {
-    disableDevLogs: true,
-  },
+
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: false,
 });
 
 
