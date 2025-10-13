@@ -2,7 +2,6 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { composePlugins, withNx } = require('@nx/next');
-const withPWAInit = require("@ducanh2912/next-pwa").default;
 // @ts-ignore
 const PORTAL_BASE_URL = 'https://sunbird-editor.tekdinext.com';
 
@@ -18,63 +17,14 @@ const routes = {
 const BASE_PATH = process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '';
 
 const isDev = process.env.NODE_ENV === 'development';
-const withPWA = withPWAInit({
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  swcMinify: true,
-  dest: "public",
-  fallbacks: {
-    //image: "/static/images/fallback.png",
-    document: "/offline",
-    // font: '/static/font/fallback.woff2',
-    // audio: ...,
-    // video: ...,
-  },
-  dir: './src',
-  pwa: {
-    dest: 'public',
-    cleanupOutdatedCaches: true,
-    runtimeCaching: [
-      {
-        // Cache HTML pages (like /home)
-        urlPattern: ({ request }) => request.destination === "document",
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "pages-cache",
-          expiration: {
-            maxEntries: 20,
-            maxAgeSeconds: 24 * 60 * 60,
-          },
-        },
-      },
-      {
-        // Cache CSS/JS
-        urlPattern: ({ request }) =>
-          ["style", "script", "worker"].includes(request.destination),
-        handler: "StaleWhileRevalidate",
-        options: {
-          cacheName: "static-resources",
-        },
-      },
-      {
-        // Cache images
-        urlPattern: ({ request }) => request.destination === "image",
-        handler: "CacheFirst",
-        options: {
-          cacheName: "images-cache",
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-          },
-        },
-      },
-    ]
-  },
-  workboxOptions: {
-    disableDevLogs: true,
-  },
+
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: false,
 });
+
 
 
 const nextConfig = {

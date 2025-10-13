@@ -64,12 +64,10 @@ const Scanner = () => {
     await stopScan();
     if(path.includes('verifyCertificate')){
       let userId=path.split('/').pop();
-      console.log("id",userId)
       let baseUrl=localStorage.getItem('origin')
       window.location.href = `${baseUrl}/certificate-verify/${userId}`
       return;
     }
-    console.log("path",path)
     window.location.href=path
     return;
   };
