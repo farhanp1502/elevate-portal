@@ -39,6 +39,7 @@ if (core === 'shikshagrah') core = 'shikshagraha';
           data?.result?.logoUrl ||
           `/icons/icon-192x192.png`;
         return {
+          manifest:'/manifest.json',
           title: `Welcome to ${code}`,
           icons: { icon: logo, apple: logo },
         };
@@ -48,6 +49,7 @@ if (core === 'shikshagrah') core = 'shikshagraha';
 
   const fallbackIcon = '/icons/icon-192x192.png';
   return {
+     manifest:'/manifest.json',
     title: `Welcome to ${core}`,
     icons: { icon: fallbackIcon, apple: fallbackIcon },
   };
