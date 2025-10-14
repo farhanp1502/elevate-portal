@@ -54,14 +54,12 @@ export default function Login() {
     return null;
   };
   useEffect(() => {
-    console.log('page.tsx');
+    debugger;
     const token = localStorage.getItem('accToken') || getCookie('token');
-    console.log('token', token);
     const status =
       localStorage.getItem('userStatus') || getCookie('userStatus');
-    console.log('status', status);
+    debugger;
     if (token && status !== 'archived') {
-      console.log('replace url true');
       router.replace('/home');
       // router.push('/home');
     }
@@ -73,7 +71,6 @@ export default function Login() {
   }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      console.log('if block client side rendering');
       const hostname = window.location.hostname;
       const origin = window.location.origin;
       const parts = hostname.split('.');
@@ -174,7 +171,6 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      console.log('formData', formData);
       const { userName, password } = formData;
       const isMobile = /^[6-9]\d{9}$/.test(userName);
       const payload = {
@@ -213,7 +209,6 @@ export default function Login() {
         }
       } else {
         setShowError(true);
-        console.log('response', response);
         setErrorMessage(response?.response?.data?.message);
       }
     } catch (error) {
