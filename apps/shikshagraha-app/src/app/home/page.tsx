@@ -31,15 +31,17 @@ export default function Home() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
   const navigate = useRouter();
-
+  const clearAuthData = () => {
+    localStorage.removeItem('accToken');
+    localStorage.clear();
+  };
   useEffect(() => {
     const accToken = localStorage.getItem('accToken');
     const unAuth = new URLSearchParams(window.location.search).get('unAuth');
     if (!accToken || unAuth === 'true') {
       // router.replace(''); // Redirect to login page
       if (unAuth === 'true') {
-        localStorage.removeItem('accToken');
-        localStorage.clear();
+        clearAuthData();
       }
       router.push(`${window.location.origin}?unAuth=true`);
       return;
