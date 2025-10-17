@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { WidgetProps } from '@rjsf/utils';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+
 const CustomTextFieldWidget = (props: WidgetProps) => {
   const {
     id,
@@ -23,6 +24,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     placeholder,
     formContext,
   } = props;
+  const fieldSchema: any = (props as any)?.schema || {};
+  const fieldPatternString: string | undefined = fieldSchema?.pattern;
+  const fieldPolicyMsg: string | undefined = fieldSchema?.policyMsg;
   const [localError, setLocalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -35,92 +39,251 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const isMobileField =
     label?.toLowerCase() === 'mobile' ||
     label?.toLowerCase() === 'contact number';
-  const passwordRegex =
-    /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\-={}:":;'<>?,./\\])(?!.*\s).{8,}$/;
-  const nameRegex = /^[a-zA-Z]+$/;
-  const contactRegex = /^[6-9]\d{9}$/;
-  const udiseRegex = /^\d{11}$/;
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const usernameRegex =
-    /^(?:[a-z0-9_-]{3,40}|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})$/;
-  const registrationCodeRegex = /^[a-zA-Z0-9_]+$/;
+
+  // Default regex patterns (fallback when no pattern is provided in schema)
+  const defaultPatterns = {
+    name: /^[a-zA-Z]+$/,
+    contact: /^[6-9]\d{9}$/,
+    udise: /^\d{11}$/,
+    email: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    username:/^(?:[a-zA-Z0-9_-]{3,40}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/,
+    registrationCode: /^\w+$/,
+    // Simplified to reduce cognitive complexity while enforcing the same policy
+    password:
+      /^(?=.*[A-Z].*[A-Z])(?=.*\d.*\d)(?=.*[!@#%$&()\-`.+,].*[!@#%$&()\-`.+,].*[!@#%$&()\-`.+,]).{11,}$/, // NOSONAR - validation pattern, not a credential
+  };
+
+  // Default error messages (fallback when no policyMsg is provided)
+  const defaultErrorMessages = {
+    password:
+      'Password must have at least two uppercase letters, two numbers, three special characters, and be at least 11 characters long.', // NOSONAR
+    name: 'Only letters are allowed.',
+    contact: 'Enter a valid 10-digit mobile number',
+    email: 'Enter a valid email address',
+    username:
+      'Please enter a valid username. It can be either a valid email address or a custom username (3-40 characters, lowercase letters and numbers only, with hyphens and underscores allowed)',
+    registrationCode:
+      'Registration code may only contain letters, numbers and underscore.',
+    confirmPassword: 'Password and confirm password must be the same.', // NOSONAR
+    requiredField: 'This field is required.',
+    eitherRequired: 'Either email or contact number is required',
+  };
+
   const lowerLabel = label?.toLowerCase();
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  // Helper function to get the appropriate pattern for a field
+  const getFieldPattern = (fieldKey: string): RegExp | null => {
+    // If form config has a pattern, use it
+    if (fieldPatternString) {
+      try {
+        return new RegExp(fieldPatternString);
+      } catch (error) {
+        console.warn(
+          `Invalid regex pattern in form config: ${fieldPatternString}`,
+          error
+        );
+        // Fall back to default pattern if form config pattern is invalid
+      }
+    }
+
+    // Fall back to default patterns based on field type
+    const defaultPatternMap: Record<string, RegExp> = {
+      'first name': defaultPatterns.name,
+      'last name': defaultPatterns.name,
+      username: defaultPatterns.username,
+      'registration code': defaultPatterns.registrationCode,
+      password: defaultPatterns.password,
+      email: defaultPatterns.email,
+      'contact number': defaultPatterns.contact,
+      mobile: defaultPatterns.contact,
+      udise: defaultPatterns.udise,
+    };
+
+    return defaultPatternMap[fieldKey] || null;
+  };
+
+  // Helper function to get the appropriate error message for a field
+  const getFieldErrorMessage = (fieldKey: string): string => {
+    // If form config has a policy message, use it
+    if (fieldPolicyMsg) {
+      return fieldPolicyMsg;
+    }
+
+    // Fall back to default error messages based on field type
+    const defaultErrorMessageMap: Record<string, string> = {
+      'first name': defaultErrorMessages.name,
+      'last name': defaultErrorMessages.name,
+      username: defaultErrorMessages.username,
+      'registration code': defaultErrorMessages.registrationCode,
+      password: defaultErrorMessages.password,
+      'confirm password': defaultErrorMessages.confirmPassword,
+      email: defaultErrorMessages.email,
+      'contact number': defaultErrorMessages.contact,
+      mobile: defaultErrorMessages.contact,
+      required: defaultErrorMessages.requiredField,
+      eitherRequired: defaultErrorMessages.eitherRequired,
+    };
+
+    return (
+      defaultErrorMessageMap[fieldKey] || defaultErrorMessages.requiredField
+    );
+  };
+
   const isOptional = () => {
     if (isEmailField && formData.mobile) return true;
     if (isMobileField && formData.email) return true;
     return false;
   };
+
   const isActuallyRequired = () => {
     if (isEmailField) return !formData.mobile && required;
     if (isMobileField) return !formData.email && required;
     return required;
   };
-  const validateField = (field: string, val: string): string | null => {
-    if (isOptional() && !val) return null;
-    console.log('field', field);
-    if (field.toLowerCase() === 'last name' && !val) {
+
+  // Helpers
+  const validateWithPattern = (
+    val: string,
+    pattern: RegExp,
+    errorMessage: string
+  ): string | null => {
+    if (val && !pattern.test(val)) {
+      return errorMessage;
+    }
+    return null;
+  };
+
+  const validateRequired = (fieldKey: string, input: string): string | null => {
+    if (isOptional() && !input) return null;
+    if (isActuallyRequired() && !input) return getFieldErrorMessage('required');
+    if (fieldKey === 'last name' && !input) return null;
+    return null;
+  };
+
+  const validateSchema = (input: string, fieldKey: string): string | null => {
+    if (!input) return null;
+
+    const fieldPattern = getFieldPattern(fieldKey);
+    const fieldErrorMessage = getFieldErrorMessage(fieldKey);
+
+    if (fieldPattern) {
+      const schemaErr = validateWithPattern(
+        input,
+        fieldPattern,
+        fieldErrorMessage
+      );
+      if (schemaErr) return schemaErr;
+    }
+
+    // Short-circuit for complex fields
+    if (
+      [
+        'first name',
+        'last name',
+        'username',
+        'registration code',
+        'password',
+        'confirm password',
+      ].includes(fieldKey)
+    ) {
+      return validatePasswordFields(fieldKey, input);
+    }
+
+    return null;
+  };
+
+  const validatePasswordFields = (
+    fieldKey: string,
+    input: string
+  ): string | null => {
+    if (fieldKey === 'confirm password') {
+      if (input.includes(' ')) return 'Confirm password cannot contain spaces.';
+      if (input !== formData.password)
+        return getFieldErrorMessage('confirm password');
+    }
+
+    if (fieldKey === 'password' && input.includes(' ')) {
+      return 'Password cannot contain spaces.';
+    }
+
+    return null;
+  };
+
+  const fieldValidators: Record<string, (val: string) => string | null> = {
+    'first name': (val) => {
+      const pattern = getFieldPattern('first name');
+      const errorMessage = getFieldErrorMessage('first name');
+      return validateWithPattern(val, pattern!, errorMessage);
+    },
+    'last name': (val) => {
+      if (!val) return null;
+      const pattern = getFieldPattern('last name');
+      const errorMessage = getFieldErrorMessage('last name');
+      return validateWithPattern(val, pattern!, errorMessage);
+    },
+    username: (val) => {
+      const pattern = getFieldPattern('username');
+      const errorMessage = getFieldErrorMessage('username');
+      return validateWithPattern(val, pattern!, errorMessage);
+    },
+    'registration code': (val) => {
+      const pattern = getFieldPattern('registration code');
+      const errorMessage = getFieldErrorMessage('registration code');
+      return validateWithPattern(val, pattern!, errorMessage);
+    },
+    password: (val) => {
+      if (val.includes(' ')) return 'Password cannot contain spaces.';
+      const pattern = getFieldPattern('password');
+      const errorMessage = getFieldErrorMessage('password');
+      return validateWithPattern(val, pattern!, errorMessage);
+    },
+    'confirm password': (val) =>
+      validatePasswordFields('confirm password', val),
+    'contact number': (val) => {
+      if (!val) return null;
+      const pattern = getFieldPattern('contact number');
+      const errorMessage = getFieldErrorMessage('contact number');
+      return validateWithPattern(val, pattern!, errorMessage);
+    },
+    email: (val) => {
+      if (val) {
+        const pattern = getFieldPattern('email');
+        const errorMessage = getFieldErrorMessage('email');
+        const emailError = validateWithPattern(val, pattern!, errorMessage);
+        if (emailError) return emailError;
+      }
+      if (!val && !formData.mobile)
+        return getFieldErrorMessage('eitherRequired');
       return null;
+    },
+  };
+
+  const validateField = (field: string, val: string): string | null => {
+    const input = val ?? '';
+    const fieldKey = field.toLowerCase();
+
+    // Step 1: Required checks
+    const requiredError = validateRequired(fieldKey, input);
+    if (requiredError) return requiredError;
+
+    // Step 2: Schema checks
+    const schemaError = validateSchema(input, fieldKey);
+    if (schemaError) return schemaError;
+
+    // Step 3: Field-specific fallback
+    if (fieldValidators[fieldKey]) {
+      return fieldValidators[fieldKey](val);
     }
-    switch (field.toLowerCase()) {
-      case 'first name':
-        if (!nameRegex.test(val)) return 'Only letters are allowed.';
-        break;
-      case 'last name':
-        if (val && !nameRegex.test(val)) return 'Only letters are allowed.';
-        break;
-      case 'username':
-        if (!usernameRegex.test(val))
-          return 'Please enter a valid username. It can be either a valid email address or a custom username (3-40 characters, lowercase letters and numbers only, with hyphens and underscores allowed)';
-        break;
-      case 'contact number':
-        if (val && !contactRegex.test(val)) {
-          return 'Enter a valid 10-digit mobile number';
-        }
-        // Don't require if email is provided
-        if (!val && !formData.email) {
-          return 'Either contact number or email is required';
-        }
-        return null;
-        break;
-        break;
-      case 'email':
-        if (val && !emailRegex.test(val)) {
-          return 'Enter a valid email address';
-        }
-        // Don't require if mobile is provided
-        if (!val && !formData.mobile) {
-          return 'Either email or contact number is required';
-        }
-        return null;
-        break;
-      case 'registration code':
-        if (!registrationCodeRegex.test(val))
-          return 'Registration code may only contain letters, numbers and underscore.';
-        break;
-      case 'password':
-        // Check for any whitespace
-        if (val.includes(' ')) {
-          return 'Password cannot contain spaces.';
-        }
-        if (!passwordRegex.test(val))
-          return 'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.';
-        break;
-      case 'confirm password':
-        // Check for any whitespace
-        if (val.includes(' ')) {
-          return 'Confirm password cannot contain spaces.';
-        }
-        if (val !== formData.password)
-          return 'Password and confirm password must be the same.';
-        break;
-    }
+
+    // Step 4: Generic fallback
+    if (required && !val) return getFieldErrorMessage('required');
+
     return null;
   };
 
   useEffect(() => {
     if (isIOS) {
-      // Prevent zoom on focus by setting viewport meta tag
       const viewportMeta = document.querySelector('meta[name="viewport"]');
       if (viewportMeta) {
         const originalContent = viewportMeta.getAttribute('content');
@@ -129,7 +292,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
         );
 
-        // Restore original viewport on unmount
         return () => {
           if (originalContent) {
             viewportMeta.setAttribute('content', originalContent);
@@ -145,29 +307,25 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       setLocalError(error);
     }
   }, [formData.password]);
+
   const shouldShowHelperText = () => {
-    // Always show if there are validation errors
     if (displayErrors.length > 0 || localError) {
       return true;
     }
 
-    // Always show for non-email/mobile fields
     if (!isEmailField && !isMobileField) return true;
 
-    // For email field - only show if mobile isn't entered
     if (isEmailField) return !formData.mobile || (value && localError);
-
-    // For mobile field - only show if email isn't entered
     if (isMobileField) return !formData.email || (value && localError);
 
     return true;
   };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const val = event.target.value;
+
     if (isMobileField) {
-      // Remove any non-digit characters
       const numericValue = val.replace(/\D/g, '');
-      // Limit to 10 digits
       const limitedValue = numericValue.slice(0, 10);
       const error = validateField(label ?? '', limitedValue);
       setLocalError(error);
@@ -177,11 +335,11 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       }
       return;
     }
+
     if (isEmailField) {
       const error = validateField(label ?? '', val);
       setLocalError(error);
       onChange(val === '' ? undefined : val);
-      // Clear mobile error when email is entered
       if (val && formData.mobile) {
         props.onClearError?.('mobile');
       }
@@ -200,12 +358,11 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       return;
     }
 
-    // Handle password fields - remove all spaces and validate
+    // Handle password fields - remove all spaces
     if (isPasswordField || isConfirmPasswordField) {
       const noSpaceVal = val.replace(/\s/g, '');
       const error = validateField(label ?? '', noSpaceVal);
       setLocalError(error);
-      // Store the value without spaces to prevent spaces in form data
       onChange(noSpaceVal === '' ? undefined : noSpaceVal);
       if (props.onErrorChange) {
         props.onErrorChange(!!error);
@@ -213,6 +370,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       return;
     }
 
+    // Handle all other fields
     const error = validateField(label ?? '', val);
     setLocalError(error);
     onChange(val === '' ? undefined : val);
@@ -220,6 +378,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       props.onErrorChange(!!error);
     }
   };
+
   const handleBlur = () => {
     setIsFocused(false);
     if (onBlur) onBlur(id, value);
@@ -229,6 +388,8 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     setIsFocused(true);
     onFocus(id, event.target.value);
   };
+
+  // Filter out 'is a required property' messages
   const displayErrors = rawErrors.filter(
     (error) => !error.toLowerCase().includes('required')
   );
@@ -236,6 +397,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const toggleShowPassword = () => {
     setShowPassword((prev) => !prev);
   };
+
   const renderLabel = () => {
     if (
       [
@@ -252,6 +414,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         </>
       );
     }
+
     if (isEmailField || isMobileField) {
       return (
         <>
@@ -266,6 +429,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         </>
       );
     }
+
     if (isConfirmPasswordField) {
       return (
         <>
@@ -274,13 +438,14 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         </>
       );
     }
+
     return label;
   };
 
   const shouldShrinkLabel = isFocused || Boolean(value);
+
   return (
     <>
-      {/* Hidden fields to prevent autofill */}
       <input
         type="text"
         name="prevent_autofill_username"
@@ -291,6 +456,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         name="prevent_autofill_password"
         style={{ display: 'none' }}
       />
+
       <TextField
         fullWidth
         id={id}
@@ -344,16 +510,14 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           sx: {
             '& .MuiInputBase-input': {
               padding: '10px 12px',
-              fontSize: isIOS ? '16px !important' : '12px !important', // Ensure 16px font size to prevent iOS zoom
+              fontSize: isIOS ? '16px !important' : '12px !important',
               color: readonly ? '#000000' : undefined,
               backgroundColor: readonly ? '#f5f5f5' : undefined,
               WebkitTextFillColor: readonly ? '#000000' : undefined,
-              // iOS Safari zoom prevention
               transform: 'translateZ(0)',
               WebkitTransform: 'translateZ(0)',
               WebkitAppearance: 'none',
               borderRadius: '0',
-              // Prevent zoom on focus
               '@media screen and (-webkit-min-device-pixel-ratio: 0)': {
                 fontSize: isIOS ? '16px !important' : '12px !important',
               },
@@ -361,7 +525,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: readonly ? 'rgba(0, 0, 0, 0.23)' : undefined,
             },
-            // Additional iOS fixes
             '& .MuiInputBase-root': {
               WebkitTapHighlightColor: 'transparent',
               WebkitTouchCallout: 'none',
@@ -391,7 +554,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         }}
         sx={{
           '& .MuiOutlinedInput-root': {
-            // Collapse notch when label isn't shrunk; expand when shrunk
             '& .MuiOutlinedInput-notchedOutline > legend': {
               maxWidth: '0.01px',
               transition: 'max-width 150ms ease',
@@ -403,6 +565,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           },
         }}
       />
+
       {(isEmailField || isMobileField) &&
         !value &&
         !localError &&
@@ -427,4 +590,5 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     </>
   );
 };
+
 export default CustomTextFieldWidget;

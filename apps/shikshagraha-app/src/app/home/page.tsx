@@ -31,12 +31,18 @@ export default function Home() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
   const navigate = useRouter();
-
+  const clearAuthData = () => {
+    localStorage.removeItem('accToken');
+    localStorage.clear();
+  };
   useEffect(() => {
-
     const accToken = localStorage.getItem('accToken');
-    if (!accToken) {
-
+    const unAuth = new URLSearchParams(window.location.search).get('unAuth');
+    if (!accToken || unAuth === 'true') {
+      // router.replace(''); // Redirect to login page
+      if (unAuth === 'true') {
+        clearAuthData();
+      }
       router.push(`${window.location.origin}?unAuth=true`);
       return;
     } else {
@@ -45,6 +51,12 @@ export default function Home() {
           const token = localStorage.getItem('accToken') || '';
           const userId = localStorage.getItem('userId') || '';
         } catch (err) {
+          if (err.response?.status === 401) {
+            localStorage.removeItem('accToken');
+            localStorage.clear();
+            router.push(`${window.location.origin}?unAuth=true`);
+          }
+          console.log('getProfile error block', err);
           setError('Failed to load profile data');
         } finally {
           setLoading(false);
@@ -60,7 +72,7 @@ export default function Home() {
         if (!header['org-id']) return;
         try {
           const data = await readHomeListForm(token);
-          localStorage.setItem('HomeData',JSON.stringify(data.result))
+          localStorage.setItem('HomeData', JSON.stringify(data.result));
           setCardData(data.result);
           localStorage.setItem(
             'theme',
@@ -93,11 +105,15 @@ export default function Home() {
     buildProgramUrl(card.url, card.sameOrigin, card.title);
   };
 
-  const buildProgramUrl = (path: string, sameOrigin: boolean, title?: string): string => {
+  const buildProgramUrl = (
+    path: string,
+    sameOrigin: boolean,
+    title?: string
+  ): string => {
     if (sameOrigin) {
       router.push(`${path}`);
     } else {
-      if(title == 'MITRA'){
+      if (title == 'MITRA') {
         const currentUrl = window.location.href;
         const url = new URL(currentUrl);
         const encodedUrl = encodeURIComponent(url.toString());
