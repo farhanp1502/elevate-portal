@@ -31,18 +31,10 @@ export default function Home() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
   const navigate = useRouter();
-  const clearAuthData = () => {
-    localStorage.removeItem('accToken');
-    localStorage.clear();
-  };
   useEffect(() => {
     const accToken = localStorage.getItem('accToken');
-    const unAuth = new URLSearchParams(window.location.search).get('unAuth');
-    if (!accToken || unAuth === 'true') {
+    if (!accToken) {
       // router.replace(''); // Redirect to login page
-      if (unAuth === 'true') {
-        clearAuthData();
-      }
       router.push(`${window.location.origin}?unAuth=true`);
       return;
     } else {
@@ -51,12 +43,6 @@ export default function Home() {
           const token = localStorage.getItem('accToken') || '';
           const userId = localStorage.getItem('userId') || '';
         } catch (err) {
-          if (err.response?.status === 401) {
-            localStorage.removeItem('accToken');
-            localStorage.clear();
-            router.push(`${window.location.origin}?unAuth=true`);
-          }
-          console.log('getProfile error block', err);
           setError('Failed to load profile data');
         } finally {
           setLoading(false);
@@ -93,7 +79,7 @@ export default function Home() {
   const handleLogoutConfirm = () => {
     localStorage.removeItem('accToken');
     localStorage.clear();
-    router.push(``);
+    router.push(`/login`);
   };
 
   const handleLogoutCancel = () => {

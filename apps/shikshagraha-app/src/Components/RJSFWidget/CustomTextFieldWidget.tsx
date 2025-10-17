@@ -46,7 +46,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     contact: /^[6-9]\d{9}$/,
     udise: /^\d{11}$/,
     email: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-    username:/^(?:[a-zA-Z0-9_-]{3,40}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/,
+    username: /^(?:[a-z0-9_-]{3,40}|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})$/,
     registrationCode: /^\w+$/,
     // Simplified to reduce cognitive complexity while enforcing the same policy
     password:

@@ -200,6 +200,8 @@ export default function Profile({ params }: { params: { id: string } }) {
   const handleLogoutConfirm = () => {
     localStorage.removeItem('accToken');
     localStorage.clear();
+    document.cookie =
+      'accToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; SameSite=Lax';
     clearIndexedDB();
     router.push('/');
   };

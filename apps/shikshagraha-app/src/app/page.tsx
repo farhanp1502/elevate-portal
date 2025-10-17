@@ -47,15 +47,9 @@ export default function Login() {
     'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
   const passwordRegex =
     /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+\-={}:";'<>?,./\\]).{8,}$/;
-  const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
-  };
   useEffect(() => {
-    const token = localStorage.getItem('accToken') || getCookie('token');
-    const status =localStorage.getItem('userStatus') || getCookie('userStatus');
+    const token = localStorage.getItem('accToken');
+    const status = localStorage.getItem('userStatus');
     if (token && status !== 'archived') {
       router.replace('/home');
       // router.push('/home');
