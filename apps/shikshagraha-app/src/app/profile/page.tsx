@@ -278,9 +278,7 @@ export default function Profile({ params }: { params: { id: string } }) {
     setShowConfirmPassword((prev) => !prev);
 
   const confirm = () => {
-    router.push('/');
-    localStorage.removeItem('accToken');
-    localStorage.clear();
+    handleLogoutConfirm();
   };
 
   const toCamelCase = (str) => {
@@ -1252,7 +1250,7 @@ export default function Profile({ params }: { params: { id: string } }) {
               onClick={() => {
                 setShowSuccessDialog(false);
                 localStorage.clear();
-                router.push('/');
+                handleLogoutConfirm();
               }}
             >
               OK
