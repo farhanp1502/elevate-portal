@@ -119,7 +119,7 @@ const DynamicForm = ({
 
   const isValidUsername = (username: string) => {
     // Username can contain letters, numbers, hyphens, underscores, dots, and @ symbols
-    return /^[a-zA-Z0-9@._-]{3,30}$/.test(username);
+    return /^[a-zA-Z0-9@._-]{3,40}$/.test(username);
   };
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
@@ -1789,10 +1789,11 @@ const DynamicForm = ({
       hasFormErrors ||
       !hasValidContact ||
       (!isUsernameValid && formData.Username) ||
-      !hasValidUsernameFormat
+      !hasValidUsernameFormat ||
+      !formData.Username
     );
   };
-
+  console.log('formData', formData);
   return (
     <>
       {errorMessage && showError && (
@@ -1846,6 +1847,7 @@ const DynamicForm = ({
                 !formData?.Udise ||
                 !formData.Username ||
                 !isUsernameValid ||
+                !formData?.['Registration Code'] ||
                 hasValidationErrors() ||
                 (formData.Role !== 'parents' &&
                   formData.Role !== 'others' &&
