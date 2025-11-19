@@ -61,15 +61,21 @@ const Scanner = () => {
 
   const handleScanResult = async (result: Result) => {
     const path: any = result.getText();
+    console.log("path",path)
     await stopScan();
     if(path.includes('verifyCertificate')){
       let userId=path.split('/').pop();
       let baseUrl=localStorage.getItem('origin')
       window.location.href = `${baseUrl}/certificate-verify/${userId}`
       return;
+    }else if((path.includes('view/project')|| path.includes('observations/samiksha/'))){
+      console.log("else if block")
+      window.location.href=path;
+      return;
+    }else{
+      showSnackbar('Invalid QR', 'error');
+      return;
     }
-    window.location.href=path
-    return;
   };
 
   const showSnackbar = (text: string, type: AlertColor) => {
