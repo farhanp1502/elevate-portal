@@ -30,51 +30,103 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const navigate = useRouter();
   useEffect(() => {
-    const accToken = localStorage.getItem('accToken');
-    if (!accToken) {
-      document.cookie.split(";").forEach((cookie) => {
-        const name = cookie.split("=")[0].trim();
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-      });
-      router.replace('/'); // Redirect to login page
-      // router.push(`${window.location.origin}?unAuth=true`);
-      return;
-    } else {
-      const getProfileData = async () => {
-        try {
-          const token = localStorage.getItem('accToken') || '';
-          const userId = localStorage.getItem('userId') || '';
-        } catch (err) {
-          setError('Failed to load profile data');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      getProfileData();
-
-      async function fetchConfig() {
-        const header = JSON.parse(localStorage.getItem('headers'));
-        const token = localStorage.getItem('accToken');
-
-        if (!header['org-id']) return;
-        try {
-          const data = await readHomeListForm(token);
-          localStorage.setItem('HomeData', JSON.stringify(data.result));
-          setCardData(data.result);
-          localStorage.setItem(
-            'theme',
-            JSON.stringify(data.result[1].meta.theme)
-          );
-        } catch (err) {
-          setError((err as Error).message);
-        }
+    const initializeHomePage = async () => {
+      const accToken = localStorage.getItem('accToken');
+      if (!accToken) {
+        // Clear all cookies
+        document.cookie.split(';').forEach((cookie) => {
+          const name = cookie.split('=')[0].trim();
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        });
+        router.replace('/');
+        return;
       }
-      fetchConfig();
-    }
+
+      try {
+        setPageLoading(true); // Show page loader
+        setLoading(true); // Show content loader
+
+        // Fetch profile data and home data in parallel for better performance
+        const [profileResponse, homeDataResponse] = await Promise.allSettled([
+          fetchProfileDataWrapper(),
+          fetchHomeData(),
+        ]);
+
+        // Handle profile data
+        if (profileResponse.status === 'fulfilled') {
+          // Profile data fetched successfully
+        } else {
+          console.error('Profile data fetch failed:', profileResponse.reason);
+        }
+
+        // Handle home data
+        if (homeDataResponse.status === 'fulfilled') {
+          setCardData(homeDataResponse.value || []);
+        } else {
+          setError('Failed to load home data');
+          console.error('Home data fetch failed:', homeDataResponse.reason);
+        }
+      } catch (err) {
+        setError('Failed to initialize home page');
+        console.error('Home page initialization error:', err);
+      } finally {
+        // Stagger the loading states for better UX
+        setTimeout(() => {
+          setLoading(false); // Hide content loader first
+        }, 500);
+
+        setTimeout(() => {
+          setPageLoading(false); // Hide page loader after content is ready
+        }, 800);
+      }
+    };
+
+    initializeHomePage();
   }, [router]);
+  // Separate function for profile data fetching
+  const fetchProfileDataWrapper = async () => {
+    try {
+      const token = localStorage.getItem('accToken') || '';
+      const userId = localStorage.getItem('userId') || '';
+      // Add your profile data fetching logic here
+      // const profileData = await fetchProfileData(token, userId);
+      // setProfileData(profileData);
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      throw error;
+    }
+  };
+
+  const fetchHomeData = async () => {
+    try {
+      const header = JSON.parse(localStorage.getItem('headers') || '{}');
+      const token = localStorage.getItem('accToken');
+
+      if (!header['org-id']) {
+        throw new Error('Organization ID not found');
+      }
+
+      const data = await readHomeListForm(token);
+
+      // Cache the data in localStorage
+      if (data?.result) {
+        localStorage.setItem('HomeData', JSON.stringify(data.result));
+        localStorage.setItem(
+          'theme',
+          JSON.stringify(data.result[1]?.meta?.theme || {})
+        );
+        return data.result;
+      }
+
+      return [];
+    } catch (err) {
+      console.error('Error fetching home data:', err);
+      throw err;
+    }
+  };
 
   const handleAccountClick = () => {
     setShowLogoutModal(true);
@@ -113,7 +165,58 @@ export default function Home() {
       window.location.href = path + localStorage.getItem('accToken');
     }
   };
-
+  // Show full page loader during initial load
+  if (pageLoading) {
+    return (
+      <Layout
+        showTopAppBar={{
+          title: 'Home',
+          showMenuIcon: true,
+          showBackIcon: false,
+        }}
+        isFooter={true}
+        showLogo={true}
+        showBack={true}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '70vh',
+            gap: 3,
+          }}
+        >
+          <CircularProgress
+            size={60}
+            thickness={4}
+            sx={{
+              color: '#582E92',
+              animationDuration: '0.8s',
+            }}
+          />
+          <Typography
+            variant="h6"
+            color="#582E92"
+            sx={{
+              fontWeight: 'bold',
+              textAlign: 'center',
+            }}
+          >
+            Loading...
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ textAlign: 'center' }}
+          >
+            Please wait while we prepare your dashboard
+          </Typography>
+        </Box>
+      </Layout>
+    );
+  }
   return (
     <>
       <Layout
