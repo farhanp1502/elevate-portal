@@ -72,7 +72,9 @@ const Scanner = () => {
       return;
     }else{
       showSnackbar('Invalid QR', 'error');
-      handleBack()
+      setTimeout(()=>{
+        handleBack()
+      },5000)
       return;
     }
   };
