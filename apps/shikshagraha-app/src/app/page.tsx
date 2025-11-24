@@ -187,9 +187,6 @@ export default function Login() {
         localStorage.setItem('firstname', response?.result?.user?.name);
         //logout id 
         let userId = Number(localStorage.getItem("userId"));
-        console.log("userID",userId)
-        console.log("user",response?.result?.user?.id)
-        console.log('type checking',typeof userId,typeof response?.result?.user?.id)
         if(userId !== response?.result?.user?.id){
           clearIndexedDB()
         }
