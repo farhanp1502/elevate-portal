@@ -186,7 +186,10 @@ export default function Login() {
         localStorage.setItem('refToken', refreshToken);
         localStorage.setItem('firstname', response?.result?.user?.name);
         //logout id 
-        let userId = localStorage.getItem("userId")
+        let userId = Number(localStorage.getItem("userId"));
+        console.log("userID",userId)
+        console.log("user",response?.result?.user?.id)
+        console.log('type checking',typeof userId,typeof response?.result?.user?.id)
         if(userId !== response?.result?.user?.id){
           clearIndexedDB()
         }
@@ -245,7 +248,7 @@ export default function Login() {
         console.error('Error retrieving databases:', error);
       });
   }
-  
+
   const handleRegisterClick = () => {
     router.push('/register');
   };
