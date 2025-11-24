@@ -34,12 +34,7 @@ export default function Home() {
   useEffect(() => {
     const accToken = localStorage.getItem('accToken');
     if (!accToken) {
-      document.cookie.split(";").forEach((cookie) => {
-        const name = cookie.split("=")[0].trim();
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-      });
-      router.replace('/'); // Redirect to login page
-      // router.push(`${window.location.origin}?unAuth=true`);
+      router.replace('/redirecting'); // Redirect to login page
       return;
     } else {
       const getProfileData = async () => {

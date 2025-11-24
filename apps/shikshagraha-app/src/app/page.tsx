@@ -185,6 +185,11 @@ export default function Login() {
         localStorage.setItem('accToken', accessToken);
         localStorage.setItem('refToken', refreshToken);
         localStorage.setItem('firstname', response?.result?.user?.name);
+        //logout id 
+        let userId = localStorage.getItem("userId")
+        if(userId !== response?.result?.user?.id){
+          clearIndexedDB()
+        }
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
         document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Lax`;
@@ -210,6 +215,37 @@ export default function Login() {
       setFormSubmitted(false);
     }
   };
+
+  function clearIndexedDB() {
+    console.log('db clearing...');
+    indexedDB
+      .databases()
+      .then((databases) => {
+        console.log(databases);
+        databases.forEach((database) => {
+          const deleteRequest = indexedDB.deleteDatabase(database.name);
+
+          deleteRequest.onsuccess = () => {
+            console.log(`Database "${database.name}" deleted successfully.`);
+          };
+
+          deleteRequest.onerror = (event) => {
+            console.error(
+              `Error deleting database "${database.name}":`,
+              event.target.error
+            );
+          };
+
+          deleteRequest.onblocked = () => {
+            console.warn(`Database "${database.name}" deletion is blocked.`);
+          };
+        });
+      })
+      .catch((error) => {
+        console.error('Error retrieving databases:', error);
+      });
+  }
+  
   const handleRegisterClick = () => {
     router.push('/register');
   };

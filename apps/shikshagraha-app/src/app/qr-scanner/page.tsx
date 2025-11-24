@@ -68,7 +68,7 @@ const Scanner = () => {
     const mapping = [
       {
         match: 'verifyCertificate',
-        redirect: `${baseUrl}/ml/view/verifyCertificate/${userId}`
+        redirect: `${baseUrl}/ml/certificate-verify/${userId}`
       },
       {
         match: 'view/project',
@@ -83,10 +83,10 @@ const Scanner = () => {
         redirect: `${baseUrl}/observations/samiksha/create-observation/${userId}`
       }
     ];
-    const found = mapping.find(item => url.includes(item.match));
+    const found = mapping.find(item => path.includes(item.match));
 
     if (found) {
-      window.location.href = found.redirect;
+      window.location.replace(found.redirect);
       return;
     }
     showSnackbar('Invalid QR', 'error');

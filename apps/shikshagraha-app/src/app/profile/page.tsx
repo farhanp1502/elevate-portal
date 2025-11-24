@@ -198,42 +198,7 @@ export default function Profile({ params }: { params: { id: string } }) {
   };
 
   const handleLogoutConfirm = () => {
-    localStorage.removeItem('accToken');
-    localStorage.clear();
-    document.cookie =
-      'accToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; SameSite=Lax';
-    clearIndexedDB();
-    router.push('/');
-  };
-
-  function clearIndexedDB() {
-    console.log('db clearing...');
-    indexedDB
-      .databases()
-      .then((databases) => {
-        console.log(databases);
-        databases.forEach((database) => {
-          const deleteRequest = indexedDB.deleteDatabase(database.name);
-
-          deleteRequest.onsuccess = () => {
-            console.log(`Database "${database.name}" deleted successfully.`);
-          };
-
-          deleteRequest.onerror = (event) => {
-            console.error(
-              `Error deleting database "${database.name}":`,
-              event.target.error
-            );
-          };
-
-          deleteRequest.onblocked = () => {
-            console.warn(`Database "${database.name}" deletion is blocked.`);
-          };
-        });
-      })
-      .catch((error) => {
-        console.error('Error retrieving databases:', error);
-      });
+    router.push('/redirecting');
   }
 
   const handleLogoutCancel = () => {
