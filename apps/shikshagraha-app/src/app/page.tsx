@@ -151,6 +151,8 @@ export default function Login() {
         userName: !formData.userName,
         password: !formData.password,
       });
+      setFormSubmitted(false); // Reset to allow retry
+      loginClickedRef.current = false; // Reset ref
       return;
     }
     if (error.password) {
@@ -158,6 +160,8 @@ export default function Login() {
       setErrorMessage(
         'Password must be at least 8 characters long, include numerals, uppercase, lowercase, and special characters.'
       );
+      setFormSubmitted(false); // Reset to allow retry
+      loginClickedRef.current = false; // Reset ref
       return;
     }
     setLoading(true);
@@ -180,15 +184,18 @@ export default function Login() {
         if (userStatus !== 'ACTIVE') {
           setShowError(true);
           setErrorMessage('The user is deactivated, please contact admin.');
+          setFormSubmitted(false); // Reset to allow retry
+          loginClickedRef.current = false; // Reset ref
+          setLoading(false); // Reset loading state
           return;
         }
         localStorage.setItem('accToken', accessToken);
         localStorage.setItem('refToken', refreshToken);
         localStorage.setItem('firstname', response?.result?.user?.name);
-        //logout id 
-        let userId = Number(localStorage.getItem("userId"));
-        if(userId !== response?.result?.user?.id){
-          clearIndexedDB()
+        //logout id
+        let userId = Number(localStorage.getItem('userId'));
+        if (userId !== response?.result?.user?.id) {
+          clearIndexedDB();
         }
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
@@ -213,6 +220,7 @@ export default function Login() {
     } finally {
       setLoading(false);
       setFormSubmitted(false);
+      loginClickedRef.current = false; // Reset ref after submission attempt
     }
   };
 
@@ -318,12 +326,17 @@ export default function Login() {
             const isStandalone = window.matchMedia(
               '(display-mode: standalone)'
             ).matches;
-            // Allow submit only if user clicked login explicitly
+            // Allow submit only if user clicked login explicitly (for standalone apps)
             if (isStandalone && !loginClickedRef.current) {
               return;
             }
-            // Reset click flag after submission
-            loginClickedRef.current = false;
+            // If button was clicked, it already called handleButtonClick, so skip here
+            // This prevents double submission when button is clicked
+            if (loginClickedRef.current) {
+              loginClickedRef.current = false;
+              return;
+            }
+            // For keyboard submissions (Enter key), call handleButtonClick
             handleButtonClick();
           }}
           onInput={(e) => {
@@ -475,9 +488,11 @@ export default function Login() {
                 },
                 width: { xs: '50%', sm: '50%' },
               }}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 loginClickedRef.current = true;
-                // Allow submit to proceed
+                // Directly call handleButtonClick to ensure it works on first click
+                handleButtonClick();
               }}
             >
               Login

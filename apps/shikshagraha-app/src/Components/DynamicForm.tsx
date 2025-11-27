@@ -292,44 +292,116 @@ const DynamicForm = ({
   const hasValidationErrors = () => {
     const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
     const hasFormErrors = Object.keys(formErrors).length > 0;
-    const hasValidContact =
-      (formData.email && isValidEmail(formData.email)) ||
-      (formData.mobile && isValidMobile(formData.mobile));
+
+    // Check if username is valid format
     const hasValidUsernameFormat = formData.Username
       ? isValidEmail(formData.Username) ||
         isValidMobile(formData.Username) ||
         isValidUsername(formData.Username)
-      : true;
+      : false;
+
+    // Check if we have at least one valid contact method
+    const hasValidContact =
+      (formData.email && isValidEmail(formData.email)) ||
+      (formData.mobile && isValidMobile(formData.mobile));
+
+    // Check if all required fields are filled
     const hasAllRequiredFields = () => {
-      if (!formSchema?.properties) return false;
+      if (!formSchema?.properties || !formSchema?.required) return false;
 
       const requiredFields = formSchema.required || [];
 
       return requiredFields.every((fieldName) => {
         const fieldValue = formData[fieldName];
+
+        // Handle array fields (multi-select)
         if (Array.isArray(fieldValue)) {
-          return fieldValue.length > 0; // For multi-select fields
+          return fieldValue.length > 0;
         }
 
+        // Handle object fields
         if (typeof fieldValue === 'object' && fieldValue !== null) {
           return Object.values(fieldValue).some(
             (val) => val !== undefined && val !== null && val !== ''
           );
         }
+
+        // Handle string/number fields
         return (
-          fieldValue !== undefined && fieldValue !== null && fieldValue !== ''
+          fieldValue !== undefined &&
+          fieldValue !== null &&
+          fieldValue !== '' &&
+          String(fieldValue).trim().length > 0
         );
       });
     };
 
+    // CRITICAL FIX: Check specific field errors properly
+    const hasSpecificFieldErrors = () => {
+      const errors = [];
+
+      // Check Registration Code specifically - this is the main fix
+      // Check if field exists in schema properties (regardless of required array)
+      // since required fields may not be added to formSchema.required array
+      if (formSchema?.properties?.['Registration Code']) {
+        const regCodeValue = formData['Registration Code'];
+        // Handle object values (from dropdown selections)
+        if (typeof regCodeValue === 'object' && regCodeValue !== null) {
+          const hasValue = Object.values(regCodeValue).some(
+            (val) => val !== undefined && val !== null && val !== ''
+          );
+          if (!hasValue) {
+            errors.push('Registration Code is required');
+          }
+        } else if (!regCodeValue || String(regCodeValue).trim() === '') {
+          errors.push('Registration Code is required');
+        }
+      } else if (formSchema?.required?.includes('Registration Code')) {
+        // Fallback: also check required array for backward compatibility
+        const regCodeValue = formData['Registration Code'];
+        // Handle object values (from dropdown selections)
+        if (typeof regCodeValue === 'object' && regCodeValue !== null) {
+          const hasValue = Object.values(regCodeValue).some(
+            (val) => val !== undefined && val !== null && val !== ''
+          );
+          if (!hasValue) {
+            errors.push('Registration Code is required');
+          }
+        } else if (!regCodeValue || String(regCodeValue).trim() === '') {
+          errors.push('Registration Code is required');
+        }
+      }
+
+      // Check UDISE if required
+      if (formSchema?.required?.includes('Udise')) {
+        const udiseValue = formData.Udise;
+        if (!udiseValue || String(udiseValue).trim() === '') {
+          errors.push('UDISE code is required');
+        }
+      }
+
+      // Check password match
+      if (
+        formData.password &&
+        formData.confirm_password &&
+        formData.password !== formData.confirm_password
+      ) {
+        errors.push('Passwords do not match');
+      }
+
+      return errors.length > 0; // Return true if there ARE specific field errors
+    };
+
+    // Final validation logic - return true if ANY validation fails
     return (
-      hasFieldErrors ||
-      hasFormErrors ||
-      !hasValidContact ||
-      (!isUsernameValid && formData.Username) ||
-      !hasValidUsernameFormat ||
-      !formData.Username ||
-      !hasAllRequiredFields() // Add this dynamic check
+      hasFieldErrors || // Field-level errors
+      hasFormErrors || // Form-level errors
+      !hasValidContact || // No valid email/mobile
+      !hasValidUsernameFormat || // Invalid username format
+      !formData.Username || // No username provided
+      !hasAllRequiredFields() || // Missing required fields
+      hasSpecificFieldErrors() || // Specific field validation errors
+      !isUsernameValid // Username availability check
     );
   };
 
