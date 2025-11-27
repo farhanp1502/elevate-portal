@@ -624,26 +624,10 @@ export function getReassignPayload(
 }
 export const getUserDataFromLocal = (key: any) => {
   try {
-    const userData = localStorage.getItem(AppConst.STORAGE_KEYS.USER_DATA);
-    if (userData) {
-      const parsedData = JSON.parse(userData);
-      return parsedData[key] || '';
-    }
-
-    // Fallback to individual keys for backward compatibility
-    switch (key) {
-      case 'firstName':
-        return localStorage.getItem(AppConst.STORAGE_KEYS.FIRST_NAME) || 'User';
-      case 'lastName':
-        return localStorage.getItem(AppConst.STORAGE_KEYS.LAST_NAME) || '';
-      case 'email':
-        return localStorage.getItem(AppConst.STORAGE_KEYS.EMAIL) || '';
-      default:
-        return localStorage.getItem(key) || '';
-    }
+    return localStorage.getItem(key);
   } catch (error) {
-    console.error('Error reading user data from localStorage:', error);
-    return '';
+    console.error('Error reading from localStorage:', error);
+    return null;
   }
 };
 export const navigateToMitraURL = (url: string) => {
