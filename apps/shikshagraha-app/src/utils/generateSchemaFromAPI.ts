@@ -13,7 +13,7 @@ export const generateRJSFSchema = (
   fields: any[],
   rolesValue: string,
   rolesData?: any[],
-  subrolesData?: SubroleData[]
+  subrolesData?: SubroleData
 ) => {
   const schema: any = {
     type: 'object',
@@ -45,6 +45,7 @@ export const generateRJSFSchema = (
         isMultiSelect,
         fieldId,
         isEditable,
+        validation,
       } = field;
 
       const fieldSchema: any = {
@@ -69,6 +70,12 @@ export const generateRJSFSchema = (
           fieldSchema.default = defaultRole.externalId;
         }
         localStorage.setItem('role', defaultRole._id);
+        const fieldIsRequired =
+          isRequired ||
+          (validation &&
+            typeof validation === 'object' &&
+            validation.isRequired === true);
+        fieldSchema.isRequired = fieldIsRequired;
         schema.properties[name] = fieldSchema;
 
         uiSchema[name] = {
@@ -112,7 +119,12 @@ export const generateRJSFSchema = (
             'ui:widget': 'hidden',
           };
         }
-
+        const fieldIsRequired =
+          isRequired ||
+          (validation &&
+            typeof validation === 'object' &&
+            validation.isRequired === true);
+        fieldSchema.isRequired = fieldIsRequired;
         schema.properties[name] = fieldSchema;
         return;
       }
@@ -145,6 +157,12 @@ export const generateRJSFSchema = (
       if (policyMsg) {
         fieldSchema.policyMsg = policyMsg;
       }
+      const fieldIsRequired =
+        isRequired ||
+        (validation &&
+          typeof validation === 'object' &&
+          validation.isRequired === true);
+      fieldSchema.isRequired = fieldIsRequired;
       schema.properties[name] = fieldSchema;
 
       // Configure UI widget

@@ -292,60 +292,57 @@ const DynamicForm = ({
   const hasValidationErrors = () => {
     const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
     const hasFormErrors = Object.keys(formErrors).length > 0;
-    const hasValidContact =
-      (formData.email && isValidEmail(formData.email)) ||
-      (formData.mobile && isValidMobile(formData.mobile));
     const hasValidUsernameFormat = formData.Username
       ? isValidEmail(formData.Username) ||
         isValidMobile(formData.Username) ||
         isValidUsername(formData.Username)
-      : true;
+      : false;
+    const hasValidContact =
+      (formData.email && isValidEmail(formData.email)) ||
+      (formData.mobile && isValidMobile(formData.mobile));
     const hasAllRequiredFields = () => {
-      if (!formSchema?.properties) return false;
-
-      const requiredFields = formSchema.required || [];
-
-      return requiredFields.every((fieldName) => {
+      if (!formSchema?.properties || !formData) return false;
+      return Object.keys(formSchema.properties).every((fieldName) => {
+        const fieldSchema = formSchema.properties[fieldName];
+        const isRequired = fieldSchema?.isRequired === true;
+        if (!isRequired) return true;
         const fieldValue = formData[fieldName];
         if (Array.isArray(fieldValue)) {
-          return fieldValue.length > 0; // For multi-select fields
+          return fieldValue.length > 0;
         }
-
         if (typeof fieldValue === 'object' && fieldValue !== null) {
-          return Object.values(fieldValue).some(
+          const hasValue = Object.values(fieldValue).some(
             (val) => val !== undefined && val !== null && val !== ''
           );
+          return hasValue;
         }
-        return (
-          fieldValue !== undefined && fieldValue !== null && fieldValue !== ''
-        );
+        if (fieldValue === undefined || fieldValue === null) {
+          return false;
+        }
+        const stringValue = String(fieldValue).trim();
+        return stringValue.length > 0;
       });
     };
-
     return (
       hasFieldErrors ||
       hasFormErrors ||
       !hasValidContact ||
-      (!isUsernameValid && formData.Username) ||
       !hasValidUsernameFormat ||
       !formData.Username ||
-      !hasAllRequiredFields() // Add this dynamic check
+      !hasAllRequiredFields()
     );
   };
-
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
     if (regConfig && regConfig.name) {
       const fieldValue = formData[regConfig.name];
       const valueRef = regConfig.value_ref || 'external_id';
       if (!fieldValue) return '';
-
       if (typeof fieldValue === 'object') {
         return String(fieldValue[valueRef] ?? '');
       }
       return String(fieldValue ?? '');
     }
-
     const manual =
       formData.registrationcode ??
       formData['Registration Code'] ??
@@ -1765,7 +1762,7 @@ const DynamicForm = ({
         const tenantResponse = await authenticateLoginUser({
           token: response?.result?.access_token,
         });
-        localStorage.setItem('firstname', tenantResponse?.result?.firstName);
+        localStorage.setItem('firstName', tenantResponse?.result?.firstName);
 
         if (tenantResponse?.result?.status === 'archived') {
           setShowError(true);

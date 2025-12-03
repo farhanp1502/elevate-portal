@@ -1,6 +1,7 @@
 // src/services/profileService.ts
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import axios from 'axios';
+import { handleUnauthorizedError } from '../utils/Helper';
 interface MyCourseDetailsProps {
   token: string | null;
   userId: string | null;
@@ -21,22 +22,14 @@ export const fetchProfileData = async (userId: string, token: string) => {
     });
 
     if (!response.ok) {
-      if (response.status == 401) {
-        localStorage.removeItem('accToken');
-        localStorage.clear();
-      }
-      window.location.href = window.location.origin + '?unAuth=true' || '';
+      handleUnauthorizedError(undefined, response);
       throw new Error('Failed to fetch profile data');
     }
 
     const data = await response.json();
     return data.result?.response || data.result;
   } catch (error: any) {
-    if (error.status == 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true' || '';
-    }
+    handleUnauthorizedError(error);
     console.error('Error fetching profile data:', error);
     return null;
   }

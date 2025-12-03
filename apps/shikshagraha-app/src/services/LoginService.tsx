@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useRouter } from 'next/router';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
+import { handleUnauthorizedError } from '../utils/Helper';
 
 interface LoginParams {
   username: string;
@@ -77,11 +78,7 @@ export const readHomeListForm = async (token: string) => {
     });
     return data;
   } catch (err: unknown | any) {
-    if (err.status == 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(err);
     if (axios.isAxiosError(err)) {
       console.error(
         'Error fetching tenant data:',
@@ -107,19 +104,11 @@ export const authenticateUser = async ({
         tenantId: 'ebae40d1-b78a-4f73-8756-df5e4b060436', // Token passed as a parameter
       },
     });
-    if (response.status == 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(undefined, response);
 
     return response?.data;
   } catch (error: any) {
-    if (error.status == 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(error);
     console.error('error in login', error);
     // throw error;
     return error;
@@ -140,19 +129,11 @@ export const fetchTenantData = async ({
       params: { tenantId }, // Passing tenantId as a query parameter
     });
 
-    if (response.status == 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(undefined, response);
 
     return response?.data;
   } catch (error: any) {
-    if (error.status == 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(error);
     console.error('Error fetching tenant data:', error);
     return error;
   }
@@ -224,19 +205,11 @@ export const schemaRead = async (): Promise<any> => {
       }
     );
 
-    if (response.status === 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(undefined, response);
 
     return response?.data;
   } catch (error: any) {
-    if (error?.response?.status === 401) {
-      localStorage.removeItem('accToken');
-      localStorage.clear();
-      window.location.href = window.location.origin + '?unAuth=true';
-    }
+    handleUnauthorizedError(error);
     console.error('error in schemaRead', error);
     return error;
   }
