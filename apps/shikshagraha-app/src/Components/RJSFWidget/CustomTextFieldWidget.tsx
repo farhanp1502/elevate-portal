@@ -307,6 +307,16 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       setLocalError(error);
     }
   }, [formData.password]);
+  useEffect(() => {
+    if (isEmailField && formData.mobile) {
+      setLocalError(null);
+      props.onClearError?.('email');
+    }
+    if (isMobileField && formData.email) {
+      setLocalError(null);
+      props.onClearError?.('mobile');
+    }
+  }, [formData.mobile, formData.email]);
 
   const shouldShowHelperText = () => {
     if (displayErrors.length > 0 || localError) {
@@ -327,12 +337,19 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     if (isMobileField) {
       const numericValue = val.replace(/\D/g, '');
       const limitedValue = numericValue.slice(0, 10);
+      if (limitedValue) {
+        setLocalError(
+          limitedValue.length === 10
+            ? null
+            : validateField(label ?? '', limitedValue)
+        );
+        onChange(limitedValue);
+        props.onClearError?.('email');
+        return;
+      }
       const error = validateField(label ?? '', limitedValue);
       setLocalError(error);
-      onChange(limitedValue === '' ? undefined : limitedValue);
-      if (limitedValue && formData.email) {
-        props.onClearError?.('email');
-      }
+      onChange(undefined);
       return;
     }
 
@@ -556,7 +573,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       {(isEmailField || isMobileField) &&
         !value &&
         !localError &&
-        !displayErrors.length && (
+        !displayErrors.length &&
+        (!isEmailField || !formData.mobile) &&
+        (!isMobileField || !formData.email) && (
           <Typography
             variant="caption"
             sx={{
