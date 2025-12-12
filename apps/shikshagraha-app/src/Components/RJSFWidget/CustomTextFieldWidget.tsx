@@ -143,15 +143,16 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   };
 
   const getMobileMaxLength = (): number => {
-    const pattern = fieldPatternString || defaultPatterns.contact.source;
-    if (pattern) {
-      const match = pattern.match(/\{(\d+)\}/);
-      if (match && match[1]) {
-        let length = parseInt(match[1], 10)
-        return length;
-      }
+    const pattern = fieldPatternString
+    const match = pattern.match(/\{(\d+)\}/);
+    if (match && match[1]) {
+      return Number(match[1]);
     }
-    return 10; // Default fallback
+    const defaultMatch = defaultPatterns.contact.source.match(/\{(\d+)\}/);
+    if (defaultMatch && defaultMatch[1]) {
+      return Number(defaultMatch[1]);
+    }
+    return Number(defaultPatterns.contact.source.match(/\{(\d+)\}/)?.[1]);
   };
 
   // Helpers
