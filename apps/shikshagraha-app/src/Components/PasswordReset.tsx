@@ -604,6 +604,7 @@ const PasswordReset = ({ name }: { name: string }) => {
 
   const handleBack = () => {
     if (step === 'otp') {
+      setOtp(Array(6).fill('') as string[]);
       setStep('reset');
     } else if (step === 'reset') {
       router.push('/');

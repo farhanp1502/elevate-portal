@@ -1716,7 +1716,7 @@ const DynamicForm = ({
       localStorage.setItem('accToken', accessToken);
       localStorage.setItem('refToken', refreshToken);
       localStorage.setItem(
-        'firstname',
+        'firstName',
         registrationResponse?.result?.user?.name
       );
       localStorage.setItem('userId', registrationResponse?.result?.user?.id);
@@ -1776,7 +1776,7 @@ const DynamicForm = ({
           if (tenantResponse?.result?.tenantData?.[0]?.tenantId) {
             localStorage.setItem('userId', tenantResponse?.result?.userId);
             localStorage.setItem(
-              'firstname',
+              'firstName',
               tenantResponse?.result?.firstName
             );
             localStorage.setItem('name', tenantResponse?.result?.username);
@@ -1880,7 +1880,7 @@ const DynamicForm = ({
               disabled={
                 isRateLimited ||
                 errorButton ||
-                hasValidationErrors() || // This now includes all dynamic validations
+                hasValidationErrors() ||
                 !formData?.password ||
                 formData.password !== formData.confirm_password
               }

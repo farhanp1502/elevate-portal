@@ -142,6 +142,19 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     return required;
   };
 
+  const getMobileMaxLength = (): number => {
+    const pattern = fieldPatternString
+    const match = pattern.match(/\{(\d+)\}/);
+    if (match && match[1]) {
+      return Number(match[1]);
+    }
+    const defaultMatch = defaultPatterns.contact.source.match(/\{(\d+)\}/);
+    if (defaultMatch && defaultMatch[1]) {
+      return Number(defaultMatch[1]);
+    }
+    return Number(defaultPatterns.contact.source.match(/\{(\d+)\}/)?.[1]);
+  };
+
   // Helpers
   const validateWithPattern = (
     val: string,
@@ -307,6 +320,16 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       setLocalError(error);
     }
   }, [formData.password]);
+  useEffect(() => {
+    if (isEmailField && formData.mobile) {
+      setLocalError(null);
+      props.onClearError?.('email');
+    }
+    if (isMobileField && formData.email) {
+      setLocalError(null);
+      props.onClearError?.('mobile');
+    }
+  }, [formData.mobile, formData.email]);
 
   const shouldShowHelperText = () => {
     if (displayErrors.length > 0 || localError) {
@@ -325,14 +348,22 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     const val = event.target.value;
 
     if (isMobileField) {
+      const maxLength = getMobileMaxLength();
       const numericValue = val.replace(/\D/g, '');
-      const limitedValue = numericValue.slice(0, 10);
+      const limitedValue = numericValue.slice(0, maxLength);
+      if (limitedValue) {
+        setLocalError(
+          limitedValue.length === maxLength
+            ? null
+            : validateField(label ?? '', limitedValue)
+        );
+        onChange(limitedValue);
+        props.onClearError?.('email');
+        return;
+      }
       const error = validateField(label ?? '', limitedValue);
       setLocalError(error);
-      onChange(limitedValue === '' ? undefined : limitedValue);
-      if (limitedValue && formData.email) {
-        props.onClearError?.('email');
-      }
+      onChange(undefined);
       return;
     }
 
@@ -556,7 +587,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       {(isEmailField || isMobileField) &&
         !value &&
         !localError &&
-        !displayErrors.length && (
+        !displayErrors.length &&
+        (!isEmailField || !formData.mobile) &&
+        (!isMobileField || !formData.email) && (
           <Typography
             variant="caption"
             sx={{
