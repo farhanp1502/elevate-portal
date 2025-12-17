@@ -1,26 +1,19 @@
-# Use an official Node.js image as the base
 FROM node:20
 
-# Set the working directory
 WORKDIR /workspace
 
-# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+ENV NX_DAEMON=false
 
-# Copy the entire NX workspace
+# Skip all postinstall scripts (including Nx's)
+RUN npm ci --legacy-peer-deps --ignore-scripts
+
 COPY . .
 
-# Build applications
-#RUN npx nx run-many --target=build --projects=shikshagraha-app,registration,content,players
-RUN npx nx run-many --target=build --projects=shikshagraha-app,registration,content,players
-# Install PM2 to manage multiple apps
-RUN npm install -g pm2
+RUN npm install -g pm2 \
+  && npx nx run-many --target=build --projects=shikshagraha-app,registration,content,players
 
-# Expose the ports for all apps
 EXPOSE 3000 4300 4301 4108
 
-# Command to run all apps using PM2
 CMD ["pm2-runtime", "ecosystem.config.js"]
