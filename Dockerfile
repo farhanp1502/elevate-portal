@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY package*.json ./
 
 ENV NX_DAEMON=false
-ENV NX_SKIP_NX_CACHE=true
+ENV NX_CACHE_DIRECTORY=/workspace/.nx-cache
 
 # Skip all postinstall scripts (including Nx's)
 RUN npm ci --legacy-peer-deps --ignore-scripts
