@@ -8,7 +8,6 @@ on:
         required: true
 
 env:
-  DOCKER_IMAGE_NAME: elevate-portal  # Configure your image name here
   DOCKER_REGISTRY: docker.io
   DOCKER_NAMESPACE: farhansl
   DOCKER_IMAGE_NAME: elevate-portal
