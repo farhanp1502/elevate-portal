@@ -15,10 +15,6 @@ env:
 
 jobs:
   docker-image-build-and-push:
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm64]
-
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
@@ -79,7 +75,7 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        platforms: ${{ matrix.platform }}
+        platforms: linux/amd64,linux/arm64
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
