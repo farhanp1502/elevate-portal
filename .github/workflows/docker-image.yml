@@ -4,8 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       tag_version:
-        description: 'Docker image tag version (e.g., 3.3.11)'
+        description: 'Docker image tag version'
         required: true
+      build_arm64:
+        description: 'Build ARM64 image'
+        type: boolean
+        default: false
 
 env:
   DOCKER_REGISTRY: docker.io
@@ -13,12 +17,45 @@ env:
   DOCKER_IMAGE_NAME: elevate-portal
 
 jobs:
-  docker-image-build-and-push:
-    strategy:
-      matrix:
-        runner: [ubuntu-latest, ubuntu-24.04-arm64]
+  build-amd64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
-    runs-on: ${{ matrix.runner }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}
+        tags: |
+          type=raw,value=${{ github.event.inputs.tag_version }}-amd64
+
+    - name: Build and push AMD64
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        platforms: linux/amd64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  build-arm64:
+    if: github.event.inputs.build_arm64 == 'true'
+    runs-on: ubuntu-24.04-arm64  # Native ARM64 runner
     timeout-minutes: 60
 
     steps:
@@ -34,31 +71,21 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Get Docker tag version
-      id: get-version
-      run: |
-        VERSION="${{ github.event.inputs.tag_version }}"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}
         tags: |
-          type=raw,value=${{ steps.get-version.outputs.version }}
+          type=raw,value=${{ github.event.inputs.tag_version }}-arm64
 
-    - name: Build and push
+    - name: Build and push ARM64
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        # Automatically uses native platform
+        # No platform specified - uses native ARM64
         cache-from: type=gha
         cache-to: type=gha,mode=max
-
-    - name: Image digest
-      run: echo "Pushed with digest ${{ steps.build.outputs.digest }}"
