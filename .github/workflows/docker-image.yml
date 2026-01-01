@@ -14,18 +14,16 @@ env:
 
 jobs:
   docker-image-build-and-push:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 120  # 2 hours for both platforms
+    strategy:
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm64]
+
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-      with:
-        platforms: arm64
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -39,26 +37,8 @@ jobs:
     - name: Get Docker tag version
       id: get-version
       run: |
-        if [ ! -z "${{ github.event.inputs.tag_version }}" ]; then
-          VERSION="${{ github.event.inputs.tag_version }}"
-        elif [ ! -z "${TAG_VERSION}" ]; then
-          VERSION="${TAG_VERSION}"
-        else
-          echo "Error: Docker image version must be provided"
-          exit 1
-        fi
+        VERSION="${{ github.event.inputs.tag_version }}"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-    - name: Check if version exists on Docker Hub
-      id: check-version
-      run: |
-        VERSION=${{ steps.get-version.outputs.version }}
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-          "https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NAMESPACE }}/repositories/${{ env.DOCKER_IMAGE_NAME }}/tags/$VERSION")
-        if [ "$RESPONSE" -eq 200 ]; then
-          echo "Error: Tag $VERSION already exists on Docker Hub"
-          exit 1
-        fi
 
     - name: Extract metadata
       id: meta
@@ -68,8 +48,7 @@ jobs:
         tags: |
           type=raw,value=${{ steps.get-version.outputs.version }}
 
-    - name: Build and push Docker image
-      id: build
+    - name: Build and push
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -77,14 +56,9 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        platforms: linux/amd64,linux/arm64  # Both platforms
+        # Automatically uses native platform
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Image digest
-      run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
-
-    - name: Print pushed tags
-      run: |
-        echo "Pushed tags:"
-        echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'
+      run: echo "Pushed with digest ${{ steps.build.outputs.digest }}"
