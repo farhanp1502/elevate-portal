@@ -21,7 +21,6 @@ RUN npm install -g pm2 \
     --target=build \
     --projects=shikshagraha-app,registration,content,players \
     --parallel=1 \
-    --skip-nx-cache
 
 EXPOSE 3000 4300 4301 4108
 
