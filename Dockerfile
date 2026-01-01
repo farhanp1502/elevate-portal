@@ -1,51 +1,43 @@
-FROM node:20 AS base
+FROM node:20 AS builder
+
 WORKDIR /workspace
 
-# Install system dependencies that might be needed
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Build stage with all dependencies
-FROM base AS builder
-
 COPY package*.json ./
 
 ENV NX_DAEMON=false
-ENV NX_CACHE_DIRECTORY=/tmp/.nx-cache
 ENV CI=true
 
-# Install ALL dependencies (including devDependencies)
-# This ensures everything in package.json is installed
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps
+# Install ALL dependencies
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 
-# Build projects in parallel
+# Build all projects
 RUN npx nx reset && \
     npx nx run-many \
       --target=build \
       --projects=shikshagraha-app,registration,content,players \
-      --parallel=4
+      --parallel=2
 
-# Production stage
-FROM node:20 AS runner
+# Production stage - copy entire workspace
+FROM node:20-slim
+
 WORKDIR /workspace
 
 ENV NODE_ENV=production
-ENV NX_DAEMON=false
 
-# Install PM2 globally
+# Install PM2
 RUN npm install -g pm2
 
-# Copy node_modules with ALL dependencies from builder
-COPY --from=builder /workspace/node_modules ./node_modules
-COPY --from=builder /workspace/dist ./dist
-COPY --from=builder /workspace/package*.json ./
-COPY ecosystem.config.js ./
+# Copy entire built workspace (includes all app outputs)
+COPY --from=builder /workspace ./
 
 EXPOSE 3000 4300 4301 4108
 
