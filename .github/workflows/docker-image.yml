@@ -12,15 +12,20 @@ env:
   DOCKER_NAMESPACE: farhansl
   DOCKER_IMAGE_NAME: elevate-portal
 
-
 jobs:
   docker-image-build-and-push:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 hours for both platforms
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: arm64
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -31,17 +36,15 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Get Docker tag version (fail if not provided)
+    - name: Get Docker tag version
       id: get-version
       run: |
-        # Use workflow_dispatch input if provided
         if [ ! -z "${{ github.event.inputs.tag_version }}" ]; then
           VERSION="${{ github.event.inputs.tag_version }}"
-        # Or use TAG_VERSION env if set (for push/PR)
         elif [ ! -z "${TAG_VERSION}" ]; then
           VERSION="${TAG_VERSION}"
         else
-          echo "Error: Docker image version must be provided as workflow_dispatch input or TAG_VERSION env."
+          echo "Error: Docker image version must be provided"
           exit 1
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -50,12 +53,11 @@ jobs:
       id: check-version
       run: |
         VERSION=${{ steps.get-version.outputs.version }}
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NAMESPACE }}/repositories/${{ env.DOCKER_IMAGE_NAME }}/tags/$VERSION")
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NAMESPACE }}/repositories/${{ env.DOCKER_IMAGE_NAME }}/tags/$VERSION")
         if [ "$RESPONSE" -eq 200 ]; then
           echo "Error: Tag $VERSION already exists on Docker Hub"
           exit 1
-        else
-          echo "Tag $VERSION does not exist, proceeding with build"
         fi
 
     - name: Extract metadata
@@ -75,12 +77,12 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64,linux/arm64  # Both platforms
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Image digest
-      run: echo "Image pushed with digest  ${{ steps.build.outputs.digest }}"
+      run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
 
     - name: Print pushed tags
       run: |
