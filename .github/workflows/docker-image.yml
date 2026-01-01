@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_version:
-        description: 'Docker image tag version'
+        description: 'Docker image tag version (e.g., 3.3.11)'
         required: true
 
 env:
@@ -13,16 +13,27 @@ env:
   DOCKER_IMAGE_NAME: elevate-portal
 
 jobs:
-  build-arm64:
-    runs-on: ubuntu-24.04-arm64  # Native ARM64 runner
-    timeout-minutes: 60
+  docker-image-build-and-push:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: linux/amd64,linux/arm64
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: |
+          network=host
+          image=moby/buildkit:latest
+        buildkitd-flags: --allow-insecure-entitlement network.host
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -34,9 +45,14 @@ jobs:
       id: get-version
       run: |
         VERSION="${{ github.event.inputs.tag_version }}"
+        if [ -z "$VERSION" ]; then
+          echo "Error: Docker image version must be provided"
+          exit 1
+        fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Check if version exists
+    - name: Check if version exists on Docker Hub
+      id: check-version
       run: |
         VERSION=${{ steps.get-version.outputs.version }}
         RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -53,8 +69,9 @@ jobs:
         images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}
         tags: |
           type=raw,value=${{ steps.get-version.outputs.version }}
+          type=raw,value=latest
 
-    - name: Build and push ARM64
+    - name: Build and push Docker image
       id: build
       uses: docker/build-push-action@v5
       with:
@@ -63,12 +80,14 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        # No platform specified - uses native ARM64
+        platforms: linux/amd64,linux/arm64
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          BUILDKIT_INLINE_CACHE=1
 
     - name: Image digest
-      run: echo "Pushed ARM64 image with digest ${{ steps.build.outputs.digest }}"
+      run: echo "Image pushed with digest ${{ steps.build.outputs.digest }}"
 
     - name: Print pushed tags
       run: |
