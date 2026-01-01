@@ -1,43 +1,23 @@
-FROM node:20 AS builder
+FROM node:20
 
 WORKDIR /workspace
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 
 ENV NX_DAEMON=false
 ENV CI=true
 
-# Install ALL dependencies
-RUN npm ci --legacy-peer-deps
+# Skip postinstall to avoid NX post-install crash
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 COPY . .
 
-# Build all projects
-RUN npx nx reset && \
+# Manually initialize NX after copying files
+RUN npm install -g pm2 && \
+    npx nx reset && \
     npx nx run-many \
       --target=build \
-      --projects=shikshagraha-app,registration,content,players \
-      --parallel=2
-
-# Production stage - copy entire workspace
-FROM node:20-slim
-
-WORKDIR /workspace
-
-ENV NODE_ENV=production
-
-# Install PM2
-RUN npm install -g pm2
-
-# Copy entire built workspace (includes all app outputs)
-COPY --from=builder /workspace ./
+      --projects=shikshagraha-app,registration,content,players
 
 EXPOSE 3000 4300 4301 4108
 
