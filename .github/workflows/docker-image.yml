@@ -21,15 +21,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-            arch: amd64
+          # - platform: linux/amd64
+          #   runner: ubuntu-latest
+          #   arch: amd64
           - platform: linux/arm64
             runner: ubuntu-24.04-arm64  # Use native ARM if available
             arch: arm64
 
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
     - name: Checkout code
