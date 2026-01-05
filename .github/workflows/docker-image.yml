@@ -17,19 +17,9 @@ env:
   DOCKER_IMAGE_NAME: elevate-portal
 
 jobs:
-  build-multiarch:
-    strategy:
-      matrix:
-        include:
-          # - platform: linux/amd64
-          #   runner: ubuntu-latest
-          #   arch: amd64
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm64  # Use native ARM if available
-            arch: arm64
-
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
+  build-arm64:
+    runs-on: ubuntu-24.04-arm64  # Native ARM64 runner
+    timeout-minutes: 60
 
     steps:
     - name: Checkout code
@@ -44,56 +34,42 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+    - name: Check if version exists on Docker Hub
+      run: |
+        VERSION="${{ github.event.inputs.tag_version }}"
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NAMESPACE }}/repositories/${{ env.DOCKER_IMAGE_NAME }}/tags/$VERSION")
+        if [ "$RESPONSE" -eq 200 ]; then
+          echo "Error: Tag $VERSION already exists on Docker Hub"
+          exit 1
+        fi
+
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}
         tags: |
-          type=raw,value=${{ github.event.inputs.tag_version }}-${{ matrix.arch }}
-          type=raw,value=latest-${{ matrix.arch }},enable=${{ github.event.inputs.include_latest == 'true' }}
+          type=raw,value=${{ github.event.inputs.tag_version }}
+          type=raw,value=latest,enable=${{ github.event.inputs.include_latest == 'true' }}
 
-    - name: Build and push
+    - name: Build and push ARM64
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
-        platforms: ${{ matrix.platform }}
-        cache-from: type=gha,scope=${{ matrix.arch }}
-        cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+        labels: ${{ steps.meta.outputs.labels }}
+        # No platform specified - uses native ARM64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
-  create-manifest:
-    needs: build-multiarch
-    runs-on: ubuntu-latest
+    - name: Image digest
+      run: echo "ARM64 image pushed with digest ${{ steps.build.outputs.digest }}"
 
-    steps:
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Create and push manifest
+    - name: Print pushed tags
       run: |
-        VERSION="${{ github.event.inputs.tag_version }}"
-
-        # Create multi-arch manifest
-        docker buildx imagetools create -t \
-          ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:${VERSION} \
-          ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:${VERSION}-amd64 \
-          ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:${VERSION}-arm64
-
-        # Create latest manifest if requested
-        if [ "${{ github.event.inputs.include_latest }}" = "true" ]; then
-          docker buildx imagetools create -t \
-            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:latest \
-            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:latest-amd64 \
-            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:latest-arm64
-        fi
-
-    - name: Print result
-      run: |
-        echo "Multi-arch image created:"
-        echo "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.event.inputs.tag_version }}"
+        echo "Pushed ARM64 tags:"
+        echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'
